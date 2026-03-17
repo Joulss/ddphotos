@@ -14,6 +14,8 @@ with help from Claude Code, and it is what is behind
 It's pretty good and meets my needs.  Maybe it will meet yours
 too, which is why I've open-sourced it.
 
+**P.S.** _I wrote about building DD Photos in [this Medium article](https://medium.com/@DougDonohoe/3b48fdd1350c?source=friends_link&sk=4094f33198de93f5488da6539c9981ee)._
+
 ## Overview
 
 The site has a home page, with all of your albums and their description.
@@ -64,6 +66,7 @@ Website features:
   lightbox and returns to home page from album page.
 - Optional per-photo descriptions via `photogen.txt`: used as image "alt" text, grid
   mouse-hover caption (desktop), always-visible caption (mobile), and lightbox caption.
+- Each album has a human-readable URL (e.g., `/albums/antarctica`).
 - Each photo has a shareable permalink (e.g., `/albums/patagonia/5`) accessible via a copy-to-clipboard button.
 - Dark/light theme toggle.
 - OpenGraph tags for rich link previews when sharing album or photo URLs on social media
