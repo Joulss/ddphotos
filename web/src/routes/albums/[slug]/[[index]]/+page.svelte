@@ -475,7 +475,7 @@
 	}
 
 	.photo:hover img.loaded {
-		opacity: 0.85;
+		opacity: 1;
 	}
 
 	/* Hover caption overlay — slides up from bottom on hover */
@@ -485,7 +485,7 @@
 		left: 0;
 		right: 0;
 		padding: 1.5rem 0.6rem 0.5rem;
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.65));
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
 		color: white;
 		font-size: 0.78rem;
 		line-height: 1.3;
@@ -557,7 +557,7 @@
 		left: 0;
 		right: 0;
 		padding: 1.5rem 3rem 0.75rem;
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
 		color: white;
 		font-size: 0.9rem;
 		line-height: 1.4;
