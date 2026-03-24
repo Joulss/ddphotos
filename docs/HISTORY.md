@@ -566,3 +566,39 @@ Three duplication fixes in `pkg/photogen/`:
 
 **`albums_config.go`** — `LoadAlbumDescriptions` now uses `scanLines`. Removed `bufio` import.
 - Home page tests use `toPass` with retries to handle the dev-server parallel execution race where the scroll listener may not yet be registered
+
+### 42. TypeScript Types, Code Quality, and IntelliJ Warning Fixes
+
+#### TypeScript Types for JSON Data
+
+Added `web/src/lib/types.ts` with interfaces mirroring the Go JSON structs in `pkg/photogen/json.go`:
+- `PhotoSrc` (mirrors `PhotoSrcIndex`)
+- `Photo` (mirrors `PhotoIndex`)
+- `AlbumIndex`
+- `AlbumSummary`
+
+Updated `web/src/routes/+page.ts` and `web/src/routes/albums/[slug]/[[index]]/+page.ts` to use these types on `.json()` responses, replacing `any` casts. Removed `(p: any)` and `(photo: any)` annotations from the album page svelte (now inferred from typed data).
+
+Added `// IMPORTANT: Keep in sync` comment near Go structs and a matching note at the top of `types.ts`. Added a "Type sync requirement" section to `CLAUDE.md`.
+
+#### Type-Check Gating the Build
+
+Added `npm run check` (which runs `svelte-check`) as a prefix to the `build` script in `web/package.json`:
+```
+"build": "npm run check && vite build"
+```
+This means type errors abort the build locally and in GitHub Actions CI (which runs `make sample-build`).
+
+#### `@types/justified-layout`
+
+Installed `@types/justified-layout` (`npm install --save-dev`) to resolve the IntelliJ "Could not find a declaration file" warning on `import justifiedLayout from 'justified-layout'`.
+
+#### `bufio.Writer` for Sitemap
+
+`WriteSitemap` in `json.go` was calling `file.WriteString` without checking errors. Switched to `bufio.NewWriter` wrapping the file, with a single `w.Flush()` error check at the end. This is the idiomatic Go pattern: `bufio.Writer` makes write errors sticky so they surface on `Flush()`.
+
+#### IntelliJ False-Positive Suppressions
+
+- `web/src/routes/albums/[slug]/[[index]]/+page.svelte` — added explanatory comment before `<!--suppress CssUnusedSymbol -->` at top of file (`:global(.pswp)` targets PhotoSwipe-injected DOM, invisible to static analysis)
+- `web/src/app.d.ts` — added `// noinspection JSUnusedLocalSymbols` and explanatory comment before the `ImportMeta` augmentation (IntelliJ doesn't recognize the Vite module augmentation pattern)
+- `web/scripts/screenshots.mjs` — added `// noinspection JSUnresolvedVariable` comment on `window.__svelte` access (Svelte runtime global, not in any type definition)
