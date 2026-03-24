@@ -1,6 +1,7 @@
 package photogen
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -196,8 +197,10 @@ func WriteSitemap(siteDir, siteURL string, summaries []AlbumSummary, dryRun bool
 	}
 	defer file.Close()
 
+	w := bufio.NewWriter(file)
+
 	// Write XML header and urlset opening tag
-	file.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+	w.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>` + siteURL + `/</loc>
@@ -206,14 +209,18 @@ func WriteSitemap(siteDir, siteURL string, summaries []AlbumSummary, dryRun bool
 
 	// Write each album URL
 	for _, album := range summaries {
-		file.WriteString(`  <url>
+		w.WriteString(`  <url>
     <loc>` + siteURL + `/albums/` + album.Slug + `</loc>
   </url>
 `)
 	}
 
-	file.WriteString(`</urlset>
+	w.WriteString(`</urlset>
 `)
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("write sitemap: %w", err)
+	}
 
 	fmt.Printf("  wrote: %s\n", outputPath)
 	return nil
