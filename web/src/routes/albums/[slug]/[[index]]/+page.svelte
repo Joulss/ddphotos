@@ -33,7 +33,7 @@
 
 	// Compute layout based on photo aspect ratios
 	let layout = $derived(() => {
-		const aspectRatios = data.album.photos.map((p: any) => p.width / p.height);
+		const aspectRatios = data.album.photos.map((p) => p.width / p.height);
 		return justifiedLayout(aspectRatios, {
 			containerWidth,
 			targetRowHeight: 300,
@@ -44,7 +44,7 @@
 
 	// Build PhotoSwipe data source
 	let photoswipeItems = $derived(
-		data.album.photos.map((photo: any) => ({
+		data.album.photos.map((photo) => ({
 			src: `/albums/${data.slug}/${photo.src.full}`,
 			w: photo.width,
 			h: photo.height,
@@ -132,7 +132,7 @@
 		// history.pushState) to keep SvelteKit's router in sync and suppress the console
 		// warning it emits for direct history mutations.
 		//
-		// NOTE: SvelteKit's popstate handler ALSO fires for this entry (it recognises its
+		// NOTE: SvelteKit's popstate handler ALSO fires for this entry (it recognizes its
 		// own session key), so both SvelteKit and our handlePopstate run on back-nav.
 		// SvelteKit navigates to /albums/slug; handlePopstate closes the lightbox — the
 		// two are independent and don't conflict.
@@ -178,7 +178,7 @@
 			topBar.insertBefore(copyBtn, topBar.lastElementChild);
 		}
 
-		// Inject a caption into each of PhotoSwipe's 3 slide holder elements (prev,
+		// Inject a caption into each of PhotoSwipe's 3-slide holder elements (prev,
 		// current, next) so captions swipe with their photo rather than staying fixed.
 		// Uses pswp.mainScroll.itemHolders (PhotoSwipe v5 internal API).
 		const holders = (pswp as any).mainScroll?.itemHolders as any[] | undefined;

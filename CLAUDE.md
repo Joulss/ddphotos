@@ -27,6 +27,12 @@ Personal config (album definitions, descriptions, site values) lives in a separa
 pointed to via `--config-dir`. The committed `config/` directory only contains example files.
 The `sample/` directory contains working sample data for out-of-the-box testing.
 
+### Type sync requirement
+
+The Go structs in `pkg/photogen/json.go` (`AlbumIndex`, `AlbumSummary`, `PhotoIndex`, `PhotoSrcIndex`)
+define the JSON schema consumed by the frontend. Their TypeScript counterparts live in
+`web/src/lib/types.ts`. **When changing a JSON field in either place, update the other.**
+
 ### Key files
 
 - `pkg/photogen/` — album loading, EXIF extraction (govips + goexif), WebP resize (concurrent workers), JSON writing

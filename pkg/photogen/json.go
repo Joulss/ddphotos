@@ -31,6 +31,10 @@ func SaveAlbumSummaries(path string, summaries []AlbumSummary) error {
 	return writeJSON(path, summaries)
 }
 
+//
+// IMPORTANT: Keep structs in sync with TypeScript types in web/src/lib/types.ts.
+//
+
 // AlbumIndex is the structure for each album's index.json
 type AlbumIndex struct {
 	Slug   string       `json:"slug"`
