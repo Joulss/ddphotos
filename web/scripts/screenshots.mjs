@@ -44,6 +44,7 @@ const photoNum = parseInt(get('--photo') ?? '1', 10);
  */
 async function waitForHydration(page) {
 	await page.waitForFunction(() => {
+		// noinspection JSUnresolvedVariable -- window.__svelte is injected by Svelte at runtime
 		const v = window.__svelte?.v;
 		return v instanceof Set && v.size > 0;
 	});

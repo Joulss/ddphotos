@@ -1,3 +1,7 @@
+<!-- Suppress IntelliJ's "Selector is never used" warning for :global(.pswp) and similar
+     selectors that target DOM elements injected dynamically by third-party libraries
+     (PhotoSwipe). IntelliJ's static CSS analyzer can't see runtime-injected classes. -->
+<!--suppress CssUnusedSymbol -->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';

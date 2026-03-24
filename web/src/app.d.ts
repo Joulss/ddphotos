@@ -20,6 +20,10 @@ interface ImportMetaEnv {
 	readonly VITE_ALLOW_CRAWLING: string;
 }
 
+// Augments Vite's built-in ImportMeta interface to add type-safe access to
+// import.meta.env variables. IntelliJ incorrectly reports this as unused because
+// it doesn't recognize the Vite module augmentation pattern.
+// noinspection JSUnusedLocalSymbols
 interface ImportMeta {
 	readonly env: ImportMetaEnv;
 }
