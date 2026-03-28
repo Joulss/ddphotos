@@ -602,3 +602,9 @@ Installed `@types/justified-layout` (`npm install --save-dev`) to resolve the In
 - `web/src/routes/albums/[slug]/[[index]]/+page.svelte` — added explanatory comment before `<!--suppress CssUnusedSymbol -->` at top of file (`:global(.pswp)` targets PhotoSwipe-injected DOM, invisible to static analysis)
 - `web/src/app.d.ts` — added `// noinspection JSUnusedLocalSymbols` and explanatory comment before the `ImportMeta` augmentation (IntelliJ doesn't recognize the Vite module augmentation pattern)
 - `web/scripts/screenshots.mjs` — added `// noinspection JSUnresolvedVariable` comment on `window.__svelte` access (Svelte runtime global, not in any type definition)
+
+### 43. Fix Unresolved `meta name="description"` Placeholder
+
+The `app.html` shell used Vite's `%VITE_SITE_DESCRIPTION%` env substitution syntax for the global `<meta name="description">` tag. This only works when the variable is defined in a `.env` file at build time, but site config lives in the private config repo and is not in a `.env` file -- so Vite never substituted it, leaving the literal placeholder string in every built page.
+
+Fix: removed the broken tag from `app.html` and added `<meta name="description" content={description}>` to `OpenGraph.svelte`, which already has `description` as a prop and injects it via `<svelte:head>`. Since every page uses `OpenGraph`, the description is now correctly set on all pages.
