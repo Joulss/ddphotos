@@ -5,6 +5,13 @@ $(warning run: 'mv web/albums albums')
 $(error ERROR)
 endif
 
+# Migration check: web/static/albums symlink is no longer used after the decouple refactor.
+ifneq ($(wildcard web/static/albums),)
+$(warning MIGRATION REQUIRED: web/static/albums symlink is no longer used)
+$(warning run: 'rm web/static/albums')
+$(error ERROR)
+endif
+
 # Path to site.env - override if your config lives elsewhere, e.g.:
 #   make web-npm-run-dev SITE_ENV=~/work/my-photos/config/site.env
 SITE_ENV ?= config/site.env
