@@ -7,12 +7,21 @@ import { defineConfig } from 'vite';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function loadSiteEnv() {
-	const path = process.env.SITE_ENV
-		? resolve(process.env.SITE_ENV)
-		: resolve(__dirname, '../config/site.env');
-	if (!existsSync(path)) {
-		console.error(`Error: ${path} not found. Set SITE_ENV=/path/to/site.env or copy config/site.example.env.`);
-		process.exit(1);
+	let path: string;
+	if (process.env.SITE_ENV) {
+		path = resolve(process.env.SITE_ENV);
+	} else {
+		const defaultPath = resolve(__dirname, '../config/site.env');
+		const samplePath = resolve(__dirname, '../sample/config/site.env');
+		if (existsSync(defaultPath)) {
+			path = defaultPath;
+		} else if (existsSync(samplePath)) {
+			console.warn(`Warning: config/site.env not found, falling back to sample/config/site.env`);
+			path = samplePath;
+		} else {
+			console.error(`Error: config/site.env not found. Set SITE_ENV=/path/to/site.env or copy config/site.example.env.`);
+			process.exit(1);
+		}
 	}
 	for (const line of readFileSync(path, 'utf-8').split('\n')) {
 		const trimmed = line.trim();
