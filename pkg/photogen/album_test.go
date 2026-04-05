@@ -129,7 +129,7 @@ func TestCollectPhotosRecursive(t *testing.T) {
 		copyPhoto(t, dir, "portrait-1.jpg", "photo_b.jpg")
 
 		ap := &AlbumProcessor{AlbumConfig: &AlbumConfig{}}
-		photos, err := ap.collectPhotosRecursive(dir, "")
+		photos, err := ap.collectPhotosRecursive(dir, "", true)
 		require.NoError(t, err)
 
 		require.Len(t, photos, 2)
@@ -150,7 +150,7 @@ func TestCollectPhotosRecursive(t *testing.T) {
 		copyPhoto(t, sub, "portrait-1.jpg", "inner.jpg")
 
 		ap := &AlbumProcessor{AlbumConfig: &AlbumConfig{}}
-		photos, err := ap.collectPhotosRecursive(root, "")
+		photos, err := ap.collectPhotosRecursive(root, "", true)
 		require.NoError(t, err)
 
 		require.Len(t, photos, 2)
@@ -164,8 +164,7 @@ func TestCollectPhotosRecursive(t *testing.T) {
 		assert.Equal(t, "craigs_inner.jpg", subPhoto.FileName)
 		assert.Equal(t, filepath.Join(sub, "inner.jpg"), subPhoto.AbsolutePath)
 		assert.Equal(t, "Craig's/inner.jpg", subPhoto.SourcePath)
-		// root photo has no sourcePath
-		assert.Equal(t, "", rootPhoto.SourcePath)
+		assert.Equal(t, "root.jpg", rootPhoto.SourcePath)
 	})
 
 	t.Run("nested subfolders accumulate prefix", func(t *testing.T) {
@@ -175,7 +174,7 @@ func TestCollectPhotosRecursive(t *testing.T) {
 		copyPhoto(t, nested, "portrait-1.jpg", "photo.jpg")
 
 		ap := &AlbumProcessor{AlbumConfig: &AlbumConfig{}}
-		photos, err := ap.collectPhotosRecursive(root, "")
+		photos, err := ap.collectPhotosRecursive(root, "", true)
 		require.NoError(t, err)
 
 		require.Len(t, photos, 1)
@@ -191,7 +190,7 @@ func TestCollectPhotosRecursive(t *testing.T) {
 		}
 
 		ap := &AlbumProcessor{AlbumConfig: &AlbumConfig{}}
-		photos, err := ap.collectPhotosRecursive(root, "")
+		photos, err := ap.collectPhotosRecursive(root, "", true)
 		require.NoError(t, err)
 
 		require.Len(t, photos, 3)
@@ -208,7 +207,7 @@ func TestCollectPhotosRecursive(t *testing.T) {
 			[]byte("photo_a.jpg First caption.\nphoto_b Second caption.\n"), 0o644))
 
 		ap := &AlbumProcessor{AlbumConfig: &AlbumConfig{}}
-		photos, err := ap.collectPhotosRecursive(dir, "")
+		photos, err := ap.collectPhotosRecursive(dir, "", true)
 		require.NoError(t, err)
 
 		require.Len(t, photos, 2)
@@ -232,13 +231,28 @@ func TestCollectPhotosRecursive(t *testing.T) {
 			[]byte("Craig's\nroot.jpg Root caption.\n"), 0o644))
 
 		ap := &AlbumProcessor{AlbumConfig: &AlbumConfig{ManualSortOrder: true}}
-		photos, err := ap.collectPhotosRecursive(root, "")
+		photos, err := ap.collectPhotosRecursive(root, "", true)
 		require.NoError(t, err)
 
 		require.Len(t, photos, 2)
 		assert.Equal(t, "craigs_inner", photos[0].ID, "subfolder photo should come first")
 		assert.Equal(t, "root", photos[1].ID)
 		assert.Equal(t, "Root caption.", photos[1].Description)
+	})
+
+	t.Run("recurse=false: subfolders ignored", func(t *testing.T) {
+		root := t.TempDir()
+		sub := filepath.Join(root, "subdir")
+		require.NoError(t, os.Mkdir(sub, 0o755))
+		copyPhoto(t, root, "landscape-1.jpg", "root.jpg")
+		copyPhoto(t, sub, "portrait-1.jpg", "inner.jpg")
+
+		ap := &AlbumProcessor{AlbumConfig: &AlbumConfig{}}
+		photos, err := ap.collectPhotosRecursive(root, "", false)
+		require.NoError(t, err)
+
+		require.Len(t, photos, 1)
+		assert.Equal(t, "root", photos[0].ID, "only root-level photo should be returned")
 	})
 
 	t.Run("manual order: unknown entry warns, unlisted photos appended", func(t *testing.T) {
@@ -253,7 +267,7 @@ func TestCollectPhotosRecursive(t *testing.T) {
 			AlbumConfig: &AlbumConfig{ManualSortOrder: true},
 			Config:      &Config{Warn: wc},
 		}
-		photos, err := ap.collectPhotosRecursive(dir, "")
+		photos, err := ap.collectPhotosRecursive(dir, "", true)
 		require.NoError(t, err)
 
 		require.Len(t, photos, 2)

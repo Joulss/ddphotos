@@ -9,7 +9,7 @@ export interface PhotoSrc {
 export interface Photo {
 	id: string;
 	fileName: string;
-	sourcePath?: string; // original relative path from album root (recursive subfolder photos only)
+	sourcePath: string; // relative path from album root to the original source file
 	width: number;
 	height: number;
 	orientation: string;

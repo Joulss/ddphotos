@@ -3,7 +3,6 @@ package photogen
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -25,7 +24,7 @@ type Photo struct {
 	ID           string `json:"id"`
 	FileName     string `json:"fileName"`
 	AbsolutePath string `json:"-"`
-	SourcePath   string `json:"sourcePath,omitempty"` // relative path from album root (recursive albums only, subfolder photos only)
+	SourcePath   string `json:"sourcePath"` // relative path from album root to the original source file
 	Description  string `json:"description,omitempty"`
 	*PhotoMetadata
 }
@@ -36,7 +35,13 @@ func (p *Photo) String() string {
 	if !p.DateTaken.IsZero() {
 		dateStr = p.DateTaken.Format("2006-01-02 15:04")
 	}
-	s := fmt.Sprintf("%s (%dx%d %s, %s)", p.FileName, p.Width, p.Height, p.Orientation, dateStr)
+
+	nameInfo := p.FileName
+	if p.SourcePath != p.FileName {
+		nameInfo = fmt.Sprintf("%s [%s]", p.FileName, p.SourcePath)
+	}
+
+	s := fmt.Sprintf("%s (%dx%d %s, %s)", nameInfo, p.Width, p.Height, p.Orientation, dateStr)
 	if p.Description != "" {
 		s += " - " + p.Description
 	}
@@ -74,7 +79,8 @@ func (ap *AlbumProcessor) OutputPath(parts ...string) string {
 }
 
 func (ap *AlbumProcessor) Process(index, total int) error {
-	fmt.Printf("Processing %d/%d - %s (%s)...\n", index, total, ap.AlbumConfig.Name, ap.AlbumConfig.Description)
+	fmt.Printf("Processing %d/%d - %s [recurse=%v] (%s) ...\n", index, total, ap.AlbumConfig.Name,
+		ap.AlbumConfig.Recurse, ap.AlbumConfig.Description)
 
 	// load photos
 	err := ap.LoadPhotos()
@@ -126,96 +132,15 @@ func (ap *AlbumProcessor) Process(index, total int) error {
 }
 
 func (ap *AlbumProcessor) LoadPhotos() error {
-	if ap.AlbumConfig.Recurse {
-		return ap.loadPhotosRecursive()
-	}
+	fmt.Printf("  Loading photos from %s (recurse=%v) ...\n", ap.AlbumConfig.Path,
+		ap.AlbumConfig.Recurse)
 
-	files, err := os.ReadDir(ap.AlbumConfig.Path)
-	if err != nil {
-		ap.warnf("WARN: Error reading %s: %s\n", ap.AlbumConfig.Path, err)
-		return err
-	}
-
-	for _, file := range files {
-		// Check limit before processing more photos
-		if ap.Config.Limit > 0 && len(ap.Photos) >= ap.Config.Limit {
-			break
-		}
-
-		name := file.Name()
-		ext := strings.ToLower(filepath.Ext(name))
-		if _, ok := allowedPhotoExtentions[ext]; !ok {
-			continue
-		}
-
-		fullPath := path.Join(ap.AlbumConfig.Path, name)
-		photo := &Photo{
-			ID:           strings.ToLower(strings.TrimSuffix(name, ext)),
-			FileName:     name,
-			AbsolutePath: fullPath,
-		}
-
-		meta, err := ReadPhotoMetadata(fullPath)
-		if err != nil {
-			return fmt.Errorf("read metadata for %s: %w", name, err)
-		}
-		photo.PhotoMetadata = meta
-
-		ap.Photos = append(ap.Photos, photo)
-	}
-
-	// Sort photos by date taken ascending (default order)
-	sort.Slice(ap.Photos, func(i, j int) bool {
-		return ap.Photos[i].DateTaken.Before(ap.Photos[j].DateTaken)
-	})
-
-	// Load descriptions from photogen.txt (if present)
-	pd, err := loadPhotoDescriptions(ap.AlbumConfig.Path)
-	if err != nil {
-		ap.warnf("  WARN: %v\n", err)
-	}
-
-	// Apply descriptions to photos
-	for _, photo := range ap.Photos {
-		if desc, ok := pd.descriptions[photo.ID]; ok {
-			photo.Description = desc
-		} else if len(pd.descriptions) > 0 {
-			ap.warnf("  WARN: description not found for %s\n", photo.ID)
-		}
-	}
-
-	// Apply manual sort order if configured and photogen.txt was found
-	if ap.AlbumConfig.ManualSortOrder && len(pd.order) > 0 {
-		ap.Photos = ap.reorderByDescriptionFile(ap.Photos, pd.order)
-		fmt.Printf("  Manual sort order applied from photogen.txt\n")
-	}
-
-	// Log photos after sorting, count photos with/without dates
-	noDates := 0
-	for _, photo := range ap.Photos {
-		fmt.Printf("  %s\n", photo.String())
-		if photo.DateTaken.IsZero() {
-			noDates++
-		}
-	}
-	if noDates > 0 {
-		ap.warnf("  WARN: %d/%d photos have no EXIF date\n", noDates, len(ap.Photos))
-	}
-
-	return nil
-}
-
-// loadPhotosRecursive is the entry point for recursive album loading.
-// It collects all photos from the album directory and its subdirectories,
-// applies the limit, logs the results, and sets ap.Photos.
-func (ap *AlbumProcessor) loadPhotosRecursive() error {
-	fmt.Printf("  Loading photos recursively from %s...\n", ap.AlbumConfig.Path)
-	photos, err := ap.collectPhotosRecursive(ap.AlbumConfig.Path, "")
+	photos, err := ap.collectPhotosRecursive(ap.AlbumConfig.Path, "", ap.AlbumConfig.Recurse)
 	if err != nil {
 		return err
 	}
 
-	// Global date sort across all subdirectories (unless manual sort order is in use).
+	// Global date sort across all photos (unless manual sort order is in use).
 	if !ap.AlbumConfig.ManualSortOrder {
 		sort.Slice(photos, func(i, j int) bool {
 			return photos[i].DateTaken.Before(photos[j].DateTaken)
@@ -230,9 +155,14 @@ func (ap *AlbumProcessor) loadPhotosRecursive() error {
 	ap.Photos = photos
 
 	// Log photos and count those without dates
+	if len(ap.Photos) == 0 {
+		fmt.Printf("    Found 0 photos.\n")
+	} else {
+		fmt.Printf("    Found %d photos:\n", len(photos))
+	}
 	noDates := 0
 	for _, photo := range ap.Photos {
-		fmt.Printf("  %s\n", photo.String())
+		fmt.Printf("      %s\n", photo.String())
 		if photo.DateTaken.IsZero() {
 			noDates++
 		}
@@ -244,17 +174,19 @@ func (ap *AlbumProcessor) loadPhotosRecursive() error {
 	return nil
 }
 
-// collectPhotosRecursive recursively collects photos from dir and its subdirectories,
-// returning them as a flat list. relDir is the path of dir relative to the album root
-// (empty string for the root itself). Photos in subdirectories get a prefixed ID and
-// FileName derived from the relative path to avoid name collisions.
+// collectPhotosRecursive collects photos from dir, optionally recursing into subdirectories.
+// relDir is the path of dir relative to the album root (empty string for the root itself).
+// Photos in subdirectories get a prefixed ID and FileName derived from the relative path
+// to avoid name collisions.
 //
 // Sort order:
 //   - If ManualSortOrder and a photogen.txt is present: use photogen.txt order, with
 //     subfolder names in photogen.txt expanded inline by recursing into that subfolder.
 //   - Otherwise: photos are collected with subdirectories in alphabetical order; the
-//     caller (loadPhotosRecursive) then applies a global date sort across everything.
-func (ap *AlbumProcessor) collectPhotosRecursive(dir, relDir string) ([]*Photo, error) {
+//     caller (LoadPhotos) then applies a global date sort across everything.
+func (ap *AlbumProcessor) collectPhotosRecursive(dir, relDir string, recurse bool) ([]*Photo, error) {
+	fmt.Printf("    Scanning %s ...\n", dir)
+
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("read dir %s: %w", dir, err)
@@ -292,9 +224,7 @@ func (ap *AlbumProcessor) collectPhotosRecursive(dir, relDir string) ([]*Photo, 
 			ID:           photoID,
 			FileName:     outputName,
 			AbsolutePath: fullPath,
-		}
-		if relDir != "" {
-			photo.SourcePath = filepath.ToSlash(filepath.Join(relDir, name))
+			SourcePath:   filepath.ToSlash(filepath.Join(relDir, name)),
 		}
 		meta, err := ReadPhotoMetadata(fullPath)
 		if err != nil {
@@ -327,7 +257,7 @@ func (ap *AlbumProcessor) collectPhotosRecursive(dir, relDir string) ([]*Photo, 
 	}
 
 	if ap.AlbumConfig.ManualSortOrder && len(pd.order) > 0 {
-		return ap.expandManualOrder(dir, relDir, localPhotos, subdirs, subdirActual, pd, photosByBaseID)
+		return ap.expandManualOrder(dir, relDir, localPhotos, subdirs, subdirActual, pd, photosByBaseID, recurse)
 	}
 
 	// Default: date-sort local photos, then recurse subdirectories alphabetically.
@@ -336,12 +266,14 @@ func (ap *AlbumProcessor) collectPhotosRecursive(dir, relDir string) ([]*Photo, 
 	})
 
 	result := append([]*Photo(nil), localPhotos...)
-	for _, sd := range subdirs {
-		subPhotos, err := ap.collectPhotosRecursive(filepath.Join(dir, sd), filepath.Join(relDir, sd))
-		if err != nil {
-			return nil, err
+	if recurse {
+		for _, sd := range subdirs {
+			subPhotos, err := ap.collectPhotosRecursive(filepath.Join(dir, sd), filepath.Join(relDir, sd), recurse)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, subPhotos...)
 		}
-		result = append(result, subPhotos...)
 	}
 	return result, nil
 }
@@ -356,6 +288,7 @@ func (ap *AlbumProcessor) expandManualOrder(
 	subdirActual map[string]string,
 	pd *photoDescriptions,
 	photosByBaseID map[string]*Photo,
+	recurse bool,
 ) ([]*Photo, error) {
 	seenPhotos := map[string]bool{}
 	seenSubdirs := map[string]bool{}
@@ -373,7 +306,7 @@ func (ap *AlbumProcessor) expandManualOrder(
 			continue
 		}
 		seenSubdirs[strings.ToLower(actualName)] = true
-		subPhotos, err := ap.collectPhotosRecursive(filepath.Join(dir, actualName), filepath.Join(relDir, actualName))
+		subPhotos, err := ap.collectPhotosRecursive(filepath.Join(dir, actualName), filepath.Join(relDir, actualName), recurse)
 		if err != nil {
 			return nil, err
 		}
@@ -403,7 +336,7 @@ func (ap *AlbumProcessor) expandManualOrder(
 			continue
 		}
 		ap.warnf("  WARN: subdirectory %q in %s not in photogen.txt (appended at end)\n", sd, dir)
-		subPhotos, err := ap.collectPhotosRecursive(filepath.Join(dir, sd), filepath.Join(relDir, sd))
+		subPhotos, err := ap.collectPhotosRecursive(filepath.Join(dir, sd), filepath.Join(relDir, sd), recurse)
 		if err != nil {
 			return nil, err
 		}
