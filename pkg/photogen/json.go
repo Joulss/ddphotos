@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // LoadAlbumSummaries reads an albums.json file and returns the list of album summaries.
@@ -54,7 +55,7 @@ type PhotoIndex struct {
 	Width       int           `json:"width"`
 	Height      int           `json:"height"`
 	Orientation string        `json:"orientation"`
-	Date        string        `json:"date"`                  // ISO 8601 date
+	DateTime    string        `json:"datetime"`              // ISO 8601 datetime (camera local time, normalized to UTC)
 	Description string        `json:"description,omitempty"` // from photogen.txt
 	Src         PhotoSrcIndex `json:"src"`
 }
@@ -95,7 +96,7 @@ func (ap *AlbumProcessor) WriteAlbumIndex() error {
 	for _, photo := range ap.Photos {
 		dateStr := ""
 		if !photo.DateTaken.IsZero() {
-			dateStr = photo.DateTaken.Format("2006-01-02")
+			dateStr = photo.DateTaken.UTC().Format(time.RFC3339)
 		}
 		pi := PhotoIndex{
 			ID:          photo.ID,
@@ -104,7 +105,7 @@ func (ap *AlbumProcessor) WriteAlbumIndex() error {
 			Width:       photo.Width,
 			Height:      photo.Height,
 			Orientation: photo.Orientation,
-			Date:        dateStr,
+			DateTime:    dateStr,
 			Description: photo.Description,
 			Src: PhotoSrcIndex{
 				Grid: ap.relativeSrcPath(SizeGrid, photo.FileName),
@@ -197,23 +198,21 @@ func (ap *AlbumProcessor) GetAlbumSummary() AlbumSummary {
 }
 
 // computeDateSpan returns a human-readable date range for the album.
+// Uses the first and last dated photos; undated photos are ignored.
 func (ap *AlbumProcessor) computeDateSpan() string {
-	if len(ap.Photos) == 0 {
-		return ""
-	}
-
-	first := ap.Photos[0].DateTaken
-	last := ap.Photos[len(ap.Photos)-1].DateTaken
-
-	if first.IsZero() && last.IsZero() {
-		return ""
+	var first, last time.Time
+	for _, p := range ap.Photos {
+		if p.DateTaken.IsZero() {
+			continue
+		}
+		if first.IsZero() {
+			first = p.DateTaken
+		}
+		last = p.DateTaken
 	}
 
 	if first.IsZero() {
-		return last.Format("Jan 2006")
-	}
-	if last.IsZero() {
-		return first.Format("Jan 2006")
+		return "" // no dated photos
 	}
 
 	// Same month and year

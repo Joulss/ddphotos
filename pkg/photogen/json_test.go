@@ -61,7 +61,7 @@ func TestLoadAlbumIndex(t *testing.T) {
 		assert.Equal(t, 3072, p.Width)
 		assert.Equal(t, 4096, p.Height)
 		assert.Equal(t, "portrait", p.Orientation)
-		assert.Equal(t, "2024-04-25", p.Date)
+		assert.Equal(t, "2024-04-25T00:00:00Z", p.DateTime)
 		assert.Equal(t, "Starting the journey in Saint-Jean-Pied-de-Port.", p.Description)
 		assert.Equal(t, "grid/2024-The-Way-1.webp", p.Src.Grid)
 		assert.Equal(t, "full/2024-The-Way-1.webp", p.Src.Full)

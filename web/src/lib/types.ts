@@ -13,7 +13,7 @@ export interface Photo {
 	width: number;
 	height: number;
 	orientation: string;
-	date: string;
+	datetime: string; // ISO 8601 datetime (camera local time, normalized to UTC); empty string if no EXIF date
 	description?: string;
 	src: PhotoSrc;
 }

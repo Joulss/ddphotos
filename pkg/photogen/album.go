@@ -14,6 +14,22 @@ var allowedPhotoExtentions = map[string]struct{}{
 	".png":  {},
 }
 
+// sortByDate sorts photos ascending by date. Undated photos (zero DateTaken) sort to
+// the end; among undated photos, original scan order is preserved (stable sort).
+func sortByDate(photos []*Photo) {
+	sort.SliceStable(photos, func(i, j int) bool {
+		iZero := photos[i].DateTaken.IsZero()
+		jZero := photos[j].DateTaken.IsZero()
+		if iZero != jZero {
+			return !iZero // dated before undated
+		}
+		if iZero {
+			return false // both undated: preserve scan order
+		}
+		return photos[i].DateTaken.Before(photos[j].DateTaken)
+	})
+}
+
 type AlbumProcessor struct {
 	Config      *Config
 	AlbumConfig *AlbumConfig
@@ -142,9 +158,7 @@ func (ap *AlbumProcessor) LoadPhotos() error {
 
 	// Global date sort across all photos (unless manual sort order is in use).
 	if !ap.AlbumConfig.ManualSortOrder {
-		sort.Slice(photos, func(i, j int) bool {
-			return photos[i].DateTaken.Before(photos[j].DateTaken)
-		})
+		sortByDate(photos)
 	}
 
 	// Apply limit (truncate after full collection)
@@ -261,9 +275,7 @@ func (ap *AlbumProcessor) collectPhotosRecursive(dir, relDir string, recurse boo
 	}
 
 	// Default: date-sort local photos, then recurse subdirectories alphabetically.
-	sort.Slice(localPhotos, func(i, j int) bool {
-		return localPhotos[i].DateTaken.Before(localPhotos[j].DateTaken)
-	})
+	sortByDate(localPhotos)
 
 	result := append([]*Photo(nil), localPhotos...)
 	if recurse {
@@ -324,9 +336,7 @@ func (ap *AlbumProcessor) expandManualOrder(
 	}
 	if len(extraPhotos) > 0 {
 		ap.warnf("  WARN: %d photo(s) in %s not in photogen.txt (sorted by date, appended at end)\n", len(extraPhotos), dir)
-		sort.Slice(extraPhotos, func(i, j int) bool {
-			return extraPhotos[i].DateTaken.Before(extraPhotos[j].DateTaken)
-		})
+		sortByDate(extraPhotos)
 		result = append(result, extraPhotos...)
 	}
 
@@ -450,9 +460,7 @@ func (ap *AlbumProcessor) reorderByDescriptionFile(photos []*Photo, order []stri
 	}
 	if len(extras) > 0 {
 		ap.warnf("  WARN: %d photo(s) not in photogen.txt (sorted by date, appended at end)\n", len(extras))
-		sort.Slice(extras, func(i, j int) bool {
-			return extras[i].DateTaken.Before(extras[j].DateTaken)
-		})
+		sortByDate(extras)
 		result = append(result, extras...)
 	}
 

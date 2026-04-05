@@ -240,6 +240,27 @@ func TestCollectPhotosRecursive(t *testing.T) {
 		assert.Equal(t, "Root caption.", photos[1].Description)
 	})
 
+	t.Run("undated photos sort to end in scan order", func(t *testing.T) {
+		dir := t.TempDir()
+		// Scan order: no-date-1, dated-early, no-date-2, dated-late
+		copyPhoto(t, dir, "no-exif.jpg", "no-date-1.jpg")
+		copyPhoto(t, dir, "landscape-1.jpg", "dated-early.jpg") // 2024-05-16
+		copyPhoto(t, dir, "no-exif.jpg", "no-date-2.jpg")
+		copyPhoto(t, dir, "portrait-1.jpg", "dated-late.jpg") // 2024-05-31
+
+		ap := &AlbumProcessor{AlbumConfig: &AlbumConfig{}}
+		photos, err := ap.collectPhotosRecursive(dir, "", false)
+		require.NoError(t, err)
+
+		require.Len(t, photos, 4)
+		// Dated photos first, sorted by date
+		assert.Equal(t, "dated-early", photos[0].ID)
+		assert.Equal(t, "dated-late", photos[1].ID)
+		// Undated photos at end, in original scan order
+		assert.Equal(t, "no-date-1", photos[2].ID)
+		assert.Equal(t, "no-date-2", photos[3].ID)
+	})
+
 	t.Run("recurse=false: subfolders ignored", func(t *testing.T) {
 		root := t.TempDir()
 		sub := filepath.Join(root, "subdir")
@@ -274,6 +295,50 @@ func TestCollectPhotosRecursive(t *testing.T) {
 		assert.Equal(t, "photo_a", photos[0].ID)
 		assert.Equal(t, "photo_b", photos[1].ID, "unlisted photo appended at end")
 		assert.Len(t, wc.warnings, 2, "expect warning for ghost entry and unlisted photo_b")
+	})
+}
+
+func TestSortByDate(t *testing.T) {
+	t.Parallel()
+
+	day := func(d int) time.Time {
+		return time.Date(2024, 1, d, 0, 0, 0, 0, time.UTC)
+	}
+
+	t.Run("dated photos sorted ascending", func(t *testing.T) {
+		photos := []*Photo{
+			{ID: "c", PhotoMetadata: &PhotoMetadata{DateTaken: day(3)}},
+			{ID: "a", PhotoMetadata: &PhotoMetadata{DateTaken: day(1)}},
+			{ID: "b", PhotoMetadata: &PhotoMetadata{DateTaken: day(2)}},
+		}
+		sortByDate(photos)
+		assert.Equal(t, "a", photos[0].ID)
+		assert.Equal(t, "b", photos[1].ID)
+		assert.Equal(t, "c", photos[2].ID)
+	})
+
+	t.Run("undated photos sort to end", func(t *testing.T) {
+		photos := []*Photo{
+			{ID: "no-date-1", PhotoMetadata: &PhotoMetadata{}},
+			{ID: "dated", PhotoMetadata: &PhotoMetadata{DateTaken: day(1)}},
+			{ID: "no-date-2", PhotoMetadata: &PhotoMetadata{}},
+		}
+		sortByDate(photos)
+		assert.Equal(t, "dated", photos[0].ID)
+		assert.Equal(t, "no-date-1", photos[1].ID, "undated preserve scan order")
+		assert.Equal(t, "no-date-2", photos[2].ID, "undated preserve scan order")
+	})
+
+	t.Run("all undated preserves scan order", func(t *testing.T) {
+		photos := []*Photo{
+			{ID: "first", PhotoMetadata: &PhotoMetadata{}},
+			{ID: "second", PhotoMetadata: &PhotoMetadata{}},
+			{ID: "third", PhotoMetadata: &PhotoMetadata{}},
+		}
+		sortByDate(photos)
+		assert.Equal(t, "first", photos[0].ID)
+		assert.Equal(t, "second", photos[1].ID)
+		assert.Equal(t, "third", photos[2].ID)
 	})
 }
 
@@ -323,5 +388,21 @@ func TestReorderByDescriptionFile(t *testing.T) {
 		assert.Equal(t, "img_0002", result[1].ID)
 		assert.Equal(t, "img_0003", result[2].ID)
 		assert.Equal(t, "img_0004", result[3].ID)
+	})
+
+	t.Run("unmentioned undated photos appended after dated extras in scan order", func(t *testing.T) {
+		mixed := []*Photo{
+			{ID: "no-date-a", FileName: "no-date-a.jpg", PhotoMetadata: &PhotoMetadata{}},
+			{ID: "img_0002", FileName: "IMG_0002.jpg", PhotoMetadata: &PhotoMetadata{DateTaken: day(2)}},
+			{ID: "no-date-b", FileName: "no-date-b.jpg", PhotoMetadata: &PhotoMetadata{}},
+			{ID: "img_0004", FileName: "IMG_0004.jpg", PhotoMetadata: &PhotoMetadata{DateTaken: day(4)}},
+		}
+		order := []string{"img_0002"} // only mention one; rest are extras
+		result := ap.reorderByDescriptionFile(mixed, order)
+		require.Len(t, result, 4)
+		assert.Equal(t, "img_0002", result[0].ID)
+		assert.Equal(t, "img_0004", result[1].ID, "dated extra sorted by date")
+		assert.Equal(t, "no-date-a", result[2].ID, "undated extras in scan order")
+		assert.Equal(t, "no-date-b", result[3].ID, "undated extras in scan order")
 	})
 }

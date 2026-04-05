@@ -93,10 +93,15 @@ func readDateTaken(path string) time.Time {
 }
 
 // parseExifDateTime parses EXIF date format "2024:01:15 10:30:45" (with quotes).
+// EXIF timestamps carry no timezone; they reflect the camera's local clock. We treat
+// them as UTC (the only sensible default) and normalize explicitly with .UTC().
 func parseExifDateTime(s string) (time.Time, error) {
-	// Remove surrounding quotes if present
 	s = strings.Trim(s, "\"")
-	return time.Parse("2006:01:02 15:04:05", s)
+	t, err := time.ParseInLocation("2006:01:02 15:04:05", s, time.UTC)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return t.UTC(), nil
 }
 
 // deriveOrientation returns "portrait", "landscape", or "square" based on dimensions.
