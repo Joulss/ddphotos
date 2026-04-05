@@ -6,6 +6,29 @@ import { defineConfig } from 'vite';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// Parse a shell-style KEY=VALUE env file and apply entries to process.env.
+// Skips blank lines and comments. Strips optional surrounding quotes from values.
+// Existing env vars are never overwritten (first-write wins).
+function loadEnvFile(path: string) {
+	for (const line of readFileSync(path, 'utf-8').split('\n')) {
+		const trimmed = line.trim();
+		if (!trimmed || trimmed.startsWith('#')) continue;
+		const eq = trimmed.indexOf('=');
+		if (eq < 0) continue;
+		const key = trimmed.slice(0, eq).trim();
+		let val = trimmed.slice(eq + 1).trim();
+		if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+			val = val.slice(1, -1);
+		}
+		if (!(key in process.env)) process.env[key] = val;
+	}
+}
+
+// Load the site-specific env file containing VITE_* variables (site URL, IDs, etc.).
+// Resolution order:
+//   1. $SITE_ENV (explicit override)
+//   2. config/site.env (real config, not committed)
+//   3. sample/config/site.env (fallback for out-of-the-box dev/tooling, with a warning)
 function loadSiteEnv() {
 	let path: string;
 	if (process.env.SITE_ENV) {
@@ -23,37 +46,15 @@ function loadSiteEnv() {
 			process.exit(1);
 		}
 	}
-	for (const line of readFileSync(path, 'utf-8').split('\n')) {
-		const trimmed = line.trim();
-		if (!trimmed || trimmed.startsWith('#')) continue;
-		const eq = trimmed.indexOf('=');
-		if (eq < 0) continue;
-		const key = trimmed.slice(0, eq).trim();
-		let val = trimmed.slice(eq + 1).trim();
-		if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-			val = val.slice(1, -1);
-		}
-		if (!(key in process.env)) process.env[key] = val;
-	}
+	loadEnvFile(path);
 }
 loadSiteEnv();
 
-// Load defaults.env (lower priority than site.env — only fills gaps)
+// Load repo-wide defaults (lower priority than site.env — only fills gaps left by loadSiteEnv).
 function loadDefaultsEnv() {
 	const path = resolve(__dirname, '..', 'config', 'defaults.env');
 	if (!existsSync(path)) return;
-	for (const line of readFileSync(path, 'utf-8').split('\n')) {
-		const trimmed = line.trim();
-		if (!trimmed || trimmed.startsWith('#')) continue;
-		const eq = trimmed.indexOf('=');
-		if (eq < 0) continue;
-		const key = trimmed.slice(0, eq).trim();
-		let val = trimmed.slice(eq + 1).trim();
-		if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-			val = val.slice(1, -1);
-		}
-		if (!(key in process.env)) process.env[key] = val;
-	}
+	loadEnvFile(path);
 }
 loadDefaultsEnv();
 
