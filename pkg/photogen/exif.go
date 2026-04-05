@@ -12,7 +12,9 @@ import (
 
 func init() {
 	vips.LoggingSettings(nil, vips.LogLevelWarning)
-	vips.Startup(nil)
+	if err := vips.Startup(nil); err != nil {
+		panic(fmt.Errorf("vips startup failed: %w", err))
+	}
 }
 
 // PhotoMetadata holds extracted image metadata.
