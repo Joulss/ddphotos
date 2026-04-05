@@ -17,20 +17,20 @@ var (
 	cleanupCallback func()
 )
 
-// Return true if exit has been requested
+// ExitRequested returns true if exit has been requested.
 //
 //goland:noinspection GoNameStartsWithPackageName
 func ExitRequested() bool {
 	return atomic.LoadInt32(&exitRequested) == 1
 }
 
-// Request exit
+// SetExitRequested requests a graceful exit.
 func SetExitRequested() {
 	atomic.StoreInt32(&exitRequested, 1)
 }
 
-// Request exit, setting exitError, which causes non-zero status
-// upon exit
+// SetExitRequestedWithError requests a graceful exit and records err,
+// which causes a non-zero exit status.
 func SetExitRequestedWithError(err error) {
 	SetExitRequested()
 	cleanupLock.Lock()
@@ -38,12 +38,14 @@ func SetExitRequestedWithError(err error) {
 	exitError = err
 }
 
-// Callback to call if signal received or panic handled
+// SetCleanupCallback registers a function to call when a signal is received or a panic is handled.
 func SetCleanupCallback(cb func()) {
 	cleanupCallback = cb
 }
 
-// Exit with status 0 if err is nil and no panic, otherwise 1
+// ExitWithStatus exits with status 0 if err is nil and no prior error was recorded, otherwise 1.
+//
+//goland:noinspection GoNameStartsWithPackageName
 func ExitWithStatus(err error) {
 	cleanupLock.Lock()
 	defer cleanupLock.Unlock()
@@ -54,11 +56,10 @@ func ExitWithStatus(err error) {
 	os.Exit(code)
 }
 
-// Catch panic - prints error and triggers an exit, which
-// calls the cleanup callback, if set.  Note that any values
-// returned from the enclosing method are set to the default
-// values (e.g., bool is false, error is nil). Thus a method
-// that returns true to continue works well with this:
+// CatchPanic recovers from a panic, prints the error and stack trace, and triggers
+// a graceful exit (calling the cleanup callback if set). Note that any values returned
+// from the enclosing function are reset to their zero values (e.g., bool is false,
+// error is nil). A function that returns true to continue works well with this:
 //
 //	func process() bool {
 //	   defer CatchPanic()
@@ -73,8 +74,9 @@ func CatchPanic() {
 	}
 }
 
-// Catch panic - prints error and sets error message into given error variable.
-// Common use case is to set into a named return variable:
+// CatchPanicError recovers from a panic, prints the error and stack trace, and stores
+// the panic value in the provided error pointer. The common use case is a named return
+// variable:
 //
 //	func broken() (err error) {
 //	   defer exit.CatchPanicError(&err)
@@ -87,14 +89,15 @@ func CatchPanicError(err *error) {
 	}
 }
 
-// panic if err != nil
+// PanicOnError panics if err is non-nil.
 func PanicOnError(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
 
-// listen for CTRL-C so we can gracefully cleanup.  Calls cleanup callback, if set
+// HandleSignal listens for CTRL-C (SIGINT) and triggers a graceful exit,
+// calling the cleanup callback if one is set.
 func HandleSignal() {
 	signals := make(chan os.Signal, 1)
 	// NOTE: was catching syscall.SIGPIPE to allow use of 'tee',
@@ -108,7 +111,7 @@ func HandleSignal() {
 	}()
 }
 
-// Clear ExitRequested flag (useful in unit tests)
+// ClearExitRequested clears the exit-requested flag (useful in unit tests).
 func ClearExitRequested() {
 	atomic.StoreInt32(&exitRequested, 0)
 }

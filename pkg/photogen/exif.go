@@ -8,13 +8,13 @@ import (
 
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/rwcarlsen/goexif/exif"
+
+	"github.com/dougdonohoe/ddphotos/pkg/exit"
 )
 
 func init() {
 	vips.LoggingSettings(nil, vips.LogLevelWarning)
-	if err := vips.Startup(nil); err != nil {
-		panic(fmt.Errorf("vips startup failed: %w", err))
-	}
+	exit.PanicOnError(vips.Startup(nil))
 }
 
 // PhotoMetadata holds extracted image metadata.

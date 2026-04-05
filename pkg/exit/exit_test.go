@@ -2,8 +2,9 @@ package exit
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestExitRequestedAndCatchPanic(t *testing.T) {
@@ -16,6 +17,12 @@ func TestExitRequestedAndCatchPanic(t *testing.T) {
 	assert.False(t, ExitRequested())
 	SetExitRequested()
 	assert.True(t, ExitRequested())
+
+	ClearExitRequested()
+	err := fmt.Errorf("test error")
+	SetExitRequestedWithError(err)
+	assert.True(t, ExitRequested())
+	assert.Equal(t, err, exitError)
 
 	ClearExitRequested()
 	SetCleanupCallback(cb)
