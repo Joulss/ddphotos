@@ -12,6 +12,13 @@ $(warning run: 'rm web/static/albums')
 $(error ERROR)
 endif
 
+# Migration check: web/static/sitemap.xml is no longer generated into web/static/ after the decouple refactor.
+ifneq ($(wildcard web/static/sitemap.xml),)
+$(warning MIGRATION REQUIRED: web/static/sitemap.xml is stale and should be removed)
+$(warning run: 'rm web/static/sitemap.xml')
+$(error ERROR)
+endif
+
 # Path to site.env - override if your config lives elsewhere, e.g.:
 #   make web-npm-run-dev SITE_ENV=~/work/my-photos/config/site.env
 SITE_ENV ?= config/site.env

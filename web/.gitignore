@@ -25,6 +25,3 @@ vite.config.ts.timestamp-*
 /test-results
 /playwright-report
 
-# Generated photo albums (sitemap.xml is generated; static/albums/ is a committed placeholder dir)
-/static/sitemap.xml
-
