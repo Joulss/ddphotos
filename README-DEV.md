@@ -339,8 +339,8 @@ at the end to append those photos after the root-level ones. The album entry in
 `sample/config/albums.yaml` shows the full configuration including `cover`, `manual_sort_order`,
 and `recurse`.
 
-**`sourcePath` field**: subfolder photos include a `sourcePath` field in `index.json`
-with their original relative path from the album root (e.g. `"Craig's/img001.jpg"`).
+**`sourcePath` field**: all photos include a `sourcePath` field in `index.json`
+with their original relative path from the album source base directory (e.g. `"2008 - Big Sky/Craig's/img001.jpg"`).
 This makes it easy to find the prefixed `fileName` for a given original file:
 
 ```bash
@@ -505,7 +505,7 @@ id:         banff-2002-original-name
 The script parses the album slug and image path from the URL, locates the album's
 `index.json` (or `index.enc.json` for encrypted albums — decoded automatically via
 `cmd/decode`), and searches for the matching `src` entry to print the `fileName`, `id`,
-and `sourcePath` (for recursive albums).
+and `sourcePath`.
 
 The search is scoped to `DDPHOTOS_ALBUMS_DIR/DDPHOTOS_SITE_ID` (defaults from
 `config/defaults.env`). Override to search a different site:

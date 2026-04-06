@@ -51,7 +51,7 @@ type AlbumIndex struct {
 type PhotoIndex struct {
 	ID          string        `json:"id"`
 	FileName    string        `json:"fileName"`
-	SourcePath  string        `json:"sourcePath"` // relative path from album root to the original source file
+	SourcePath  string        `json:"sourcePath"` // relative path from album source base directory to the original source file
 	Width       int           `json:"width"`
 	Height      int           `json:"height"`
 	Orientation string        `json:"orientation"`

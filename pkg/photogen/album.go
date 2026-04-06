@@ -40,7 +40,7 @@ type Photo struct {
 	ID           string `json:"id"`
 	FileName     string `json:"fileName"`
 	AbsolutePath string `json:"-"`
-	SourcePath   string `json:"sourcePath"` // relative path from album root to the original source file
+	SourcePath   string `json:"sourcePath"` // relative path from album source base directory to the original source file
 	Description  string `json:"description,omitempty"`
 	*PhotoMetadata
 }
@@ -154,6 +154,13 @@ func (ap *AlbumProcessor) LoadPhotos() error {
 	photos, err := ap.collectPhotosRecursive(ap.AlbumConfig.Path, "", ap.AlbumConfig.Recurse)
 	if err != nil {
 		return err
+	}
+
+	// Prefix SourcePath with the album source directory name so it is relative
+	// from the base directory rather than from the album root itself.
+	albumDirName := filepath.Base(ap.AlbumConfig.Path)
+	for _, p := range photos {
+		p.SourcePath = filepath.ToSlash(filepath.Join(albumDirName, p.SourcePath))
 	}
 
 	// Global date sort across all photos (unless manual sort order is in use).
