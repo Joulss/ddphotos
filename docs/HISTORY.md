@@ -974,3 +974,59 @@ The `sort.Slice` comparator `photos[i].DateTaken.Before(photos[j].DateTaken)` ca
 The `date` field in `index.json` (and the corresponding `Date string` Go struct field and `date: string` TypeScript type) stored only a date string (`"2003-03-09"`), discarding the time component. Since the field was unused in the frontend, renamed it to `datetime` / `DateTime` / `datetime` across Go, JSON, and TypeScript, and changed the format to RFC3339 (`time.RFC3339`), e.g. `"2003-03-09T12:00:30Z"`.
 
 EXIF timestamps carry no timezone; `parseExifDateTime` now uses `time.ParseInLocation(..., time.UTC)` to make the UTC treatment explicit (previously relied on `time.Parse`'s implicit UTC default). Updated fixture `testdata/index.json` and test assertion in `json_test.go`.
+
+### 54. Home Page Scroll Restoration and HTTPS Dev Server
+
+#### Home Page Scroll Restoration
+
+When navigating from the home page to an album and pressing the back button (or "← Albums"), the home page always rendered from the top, losing the user's scroll position.
+
+**Root cause**: SvelteKit's navigation cycle calls `afterNavigate` before the home page's album grid has finished rendering. At that point `document.scrollingElement.scrollHeight` equals `window.innerHeight` (the page is not yet scrollable), so `window.scrollTo(0, y)` silently clamps to 0. This is because the album data loads asynchronously: `afterNavigate` fires, then a `$derived` reactive variable `albums` is populated, then Svelte renders the 29-card grid — only *then* is the page tall enough to scroll.
+
+**Why `await tick()` doesn't help**: SvelteKit's `commit_promise` calls `svelte.settled?.()` but has a known TODO comment that this doesn't reliably wait for full DOM layout. Even after `tick()`, the albums grid is absent.
+
+**Solution**: A `$effect` that watches `albums` (the `$derived` value). When `albums` becomes non-null, Svelte has finished rendering the grid; a `requestAnimationFrame` then waits for the browser to compute layout before calling `scrollTo`.
+
+Key pieces of the implementation in `web/src/routes/+page.svelte`:
+
+- **Module-level `savedScrollY`** (`<script module>`): persists across home-page component remounts (navigating away and back reuses the same module instance).
+- **`beforeNavigate`**: saves `window.scrollY` into `savedScrollY`.
+- **`onMount`**: if `savedScrollY > 0`, calls `disableScrollHandling()` (prevents SvelteKit from resetting scroll to 0) and sets `document.documentElement.style.visibility = 'hidden'` (prevents a flash at position 0). A 2-second failsafe timeout always unhides.
+- **`afterNavigate`**: if returning from an album page (`from?.url.pathname.startsWith('/albums/')`), sets `pendingScroll = savedScrollY` to trigger the `$effect`; otherwise clears `visibility` immediately.
+- **`$effect`**: when `albums && pendingScroll > 0`, calls `requestAnimationFrame` to unhide and `scrollTo(0, y)` after layout.
+- **`untrack()`**: used inside `$effect` to reset `pendingScroll` without re-triggering the effect.
+
+The "← Albums" link uses SvelteKit's `goto()` (type `'goto'`), not a browser back button (type `'popstate'`), so the check uses `from?.url.pathname` rather than navigation type.
+
+#### HTTPS Dev Server for Mobile Testing
+
+Password-protected albums failed when accessing the dev server via LAN IP (e.g. `http://192.168.7.92:5173/`) on mobile. The error was silent — the correct password was rejected.
+
+**Root cause**: The Web Crypto API (`crypto.subtle`) requires a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts). `localhost` qualifies, but LAN IPs over plain HTTP do not. `crypto.subtle` is `undefined` in that context, causing decryption to fail silently.
+
+**Solution**: Added a `DEV_HTTPS=1` environment variable that gates loading `@vitejs/plugin-basic-ssl`, which generates a self-signed certificate for the Vite dev server.
+
+`web/vite.config.ts` uses a top-level `await` (valid in ES module Vite configs) to conditionally import the plugin:
+
+```ts
+const httpsPlugin = process.env.DEV_HTTPS
+    ? [(await import('@vitejs/plugin-basic-ssl')).default()]
+    : [];
+
+export default defineConfig({
+    server: {
+        host: true,
+        https: !!process.env.DEV_HTTPS
+    },
+    plugins: [...httpsPlugin, sveltekit(), ...]
+});
+```
+
+A dedicated `web-npm-run-dev-https` Makefile recipe was added (without `--open`, since mobile testing requires the LAN IP, not `localhost`):
+
+```makefile
+web-npm-run-dev-https:
+    $(NODE_INIT) cd web && DEV_HTTPS=1 SITE_ENV=$(SITE_ENV) ... npm run dev
+```
+
+`README-DEV.md` documents the feature under the "LAN Access" subsection: the secure context requirement, how to start HTTPS mode (`DEV_HTTPS=1 make web-npm-run-dev-https`), and the browser self-signed cert warning users must accept.

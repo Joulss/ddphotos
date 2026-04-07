@@ -48,7 +48,7 @@ const config = {
 		prerender: {
 			entries: ['*', ...albumEntries()],
 			handleHttpError: ({ path, message }) => {
-				// Album assets (/albums/**) are served at runtime, not prerendered.
+				// Album assets (/albums/**) are served at runtime, not pre-rendered.
 				// Ignore 404s the crawler encounters for images, JSON, etc.
 				if (path.startsWith('/albums/')) return;
 				throw new Error(message);

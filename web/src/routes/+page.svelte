@@ -1,6 +1,14 @@
+<script module>
+	// Persists across home-page component remounts (navigating away and back).
+	// Set by beforeNavigate when leaving home; consumed by onMount + afterNavigate on return.
+	let savedScrollY = 0;
+</script>
+
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { browser } from '$app/environment';
+	import { beforeNavigate, afterNavigate, disableScrollHandling } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import BackToTop from '$lib/components/BackToTop.svelte';
 	import OpenGraph from '$lib/components/OpenGraph.svelte';
 	import PasswordPrompt from '$lib/components/PasswordPrompt.svelte';
@@ -17,6 +25,51 @@
 	import { footerReady } from '$lib/stores';
 
 	let { data } = $props();
+
+	// ── Scroll restoration ──────────────────────────────────────────────────────────────
+	// Problem: when navigating back to home from an album, the albums grid renders
+	// asynchronously *after* afterNavigate fires (SvelteKit's commit_promise + two tick()s
+	// don't wait for full Svelte 5 rendering). scrollTo during afterNavigate always hits a
+	// page that's too short (scrollHeight = viewportHeight), so it clamps to 0.
+	//
+	// Solution: use a reactive $effect that watches `albums`. It fires as soon as Svelte
+	// finishes rendering the grid (i.e. when albums becomes non-null). At that point the
+	// page is tall enough to scroll. The page is hidden during the wait so there's no flash.
+	//
+	// savedScrollY  — module-level, survives component remounts between navigations
+	// pendingScroll — component-level $state, triggers the $effect, cleared after scroll
+	let pendingScroll = $state(0);
+
+	beforeNavigate(() => {
+		savedScrollY = window.scrollY;
+	});
+
+	afterNavigate(({ from }) => {
+		const y = savedScrollY;
+		savedScrollY = 0;
+		if (y > 0 && from?.url.pathname.startsWith('/albums/')) {
+			pendingScroll = y; // $effect below will scroll once albums renders
+		} else {
+			// Not returning from album — unhide (set in onMount) and optionally reset scroll
+			requestAnimationFrame(() => {
+				document.documentElement.style.visibility = '';
+				if (y > 0) window.scrollTo(0, 0);
+			});
+		}
+	});
+
+	// Fire whenever albums becomes non-null (grid rendered) AND we have a pending scroll.
+	// $effect runs after Svelte commits DOM updates, so the grid is in the DOM by this point.
+	$effect(() => {
+		if (albums && pendingScroll > 0) {
+			const y = pendingScroll;
+			untrack(() => { pendingScroll = 0; }); // clear without re-triggering this effect
+			requestAnimationFrame(() => {
+				document.documentElement.style.visibility = '';
+				window.scrollTo(0, y);
+			});
+		}
+	});
 
 	const siteName = import.meta.env.VITE_SITE_NAME;
 	const siteUrl = import.meta.env.VITE_SITE_URL;
@@ -89,6 +142,19 @@
 	);
 
 	onMount(async () => {
+		// onMount fires during SvelteKit's tick() calls, before scroll handling in navigate().
+		// When we have a saved scroll position to restore:
+		// - disableScrollHandling() prevents SvelteKit from resetting scroll to 0
+		// - visibility:hidden hides the page so the user doesn't see a flash at position 0
+		//   while we wait for layout to be computed (afterNavigate rAF unhides it)
+		if (savedScrollY > 0) {
+			disableScrollHandling();
+			document.documentElement.style.visibility = 'hidden';
+			// Failsafe: if $effect never fires (e.g. albums stays null due to error), unhide.
+			setTimeout(() => { document.documentElement.style.visibility = ''; }, 2000);
+		}
+
+
 		// Clear stale cover cache if the siteId changed (e.g. switching between dev builds).
 		syncSiteId(data.siteId);
 
@@ -166,8 +232,8 @@
 {#if albums}
 	<main class:fade-in={decryptedAlbums !== null}>
 		<div class="albums">
-			{#each albums as album}
-				<a href="/albums/{album.slug}" class="album-card">
+			{#each albums as album (album.slug)}
+				<a href={resolve(`/albums/${album.slug}`)} class="album-card">
 					{#if album.cover}
 						<img src="/albums/{album.cover}" alt={album.title} />
 					{:else}

@@ -58,6 +58,23 @@ ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null
 hostname -I | awk '{print $1}'
 ```
 
+### HTTPS on the Dev Server
+
+Password-protected albums use the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)
+(`crypto.subtle`), which browsers only expose in [secure contexts](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts).
+`localhost` qualifies, but a LAN IP address (e.g. `192.168.x.x`) over plain HTTP does not —
+the password prompt will appear but decryption will silently fail.
+
+To serve the dev server over HTTPS, set `DEV_HTTPS=1`:
+
+```bash
+DEV_HTTPS=1 make web-npm-run-dev        # or your own site-specific recipe
+```
+
+This loads `@vitejs/plugin-basic-ssl`, which generates a self-signed certificate automatically.
+Your browser (and mobile browser) will show a certificate warning — click through
+**Advanced → Proceed** once and the site works normally, including password decryption.
+
 ## Simulating Slow Image Loading
 
 Album pages fade images in as they load. On a fast local connection this is

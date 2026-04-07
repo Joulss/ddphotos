@@ -71,11 +71,19 @@ const albumsDir = resolveAlbumsDir();
 
 process.env.VITE_BUILD_TIME = new Date().toISOString();
 
+// When DEV_HTTPS=1, load @vitejs/plugin-basic-ssl to serve the dev server over HTTPS.
+// This is needed for mobile testing via LAN IP (crypto.subtle requires a secure context).
+// Normal dev runs are unaffected.
+const httpsPlugin = process.env.DEV_HTTPS
+	? [(await import('@vitejs/plugin-basic-ssl')).default()]
+	: [];
+
 export default defineConfig({
 	server: {
 		host: true // Listen on all interfaces (allows phone access via IP)
 	},
 	plugins: [
+		...httpsPlugin,
 		sveltekit(),
 		{
 			name: 'albums-dev-server',
