@@ -932,3 +932,45 @@ The symlink-based approach for serving album data (`web/static/albums` → `web/
 - **Dangling symlinks eliminated**: all symlinks live inside the container's writable layer; the host filesystem is never written to by Docker.
 - **Rsync safety**: two-pass rsync strategy — pass 1 syncs app files + pre-rendered HTML (excludes album image subdirs); pass 2 syncs album data (excludes `*.html` so pre-rendered pages aren't deleted). Early variable guards prevent `--delete` from targeting an empty or wrong remote path.
 - **Migration**: Makefile detects if `web/albums/` still exists (old layout) and aborts with instructions to run `mv web/albums albums/`. Git cleanly replaces the old `web/static/albums` symlink with the new `web/static/albums/` directory on branch checkout.
+
+### 53. Go Refactoring, EXIF Improvements, and Date Semantics
+
+#### Consolidate `LoadPhotos` / `loadPhotosRecursive`
+
+`LoadPhotos()` previously had two entirely separate code paths: ~50 lines of inline photo-loading logic for the non-recursive case, and a separate `loadPhotosRecursive()` entry point that delegated to `collectPhotosRecursive()`. The non-recursive case was a base case of recursive loading (single directory, no subdirectory walk).
+
+Refactoring: deleted `loadPhotosRecursive()` and the inline non-recursive code. Added a `recurse bool` parameter to `collectPhotosRecursive()` and `expandManualOrder()`. `LoadPhotos()` now calls `collectPhotosRecursive(..., ap.AlbumConfig.Recurse)` for both cases; when `recurse=false` the subdirectory walk is simply skipped. Removed now-unused `"path"` import (old code used `path.Join`; everything now uses `filepath.Join`). Tests updated; new sub-case added: `recurse=false: subfolders ignored`.
+
+#### `SourcePath` Always Set, Relative from Base Directory
+
+`SourcePath` was previously only populated for subfolder photos in recursive albums (comment said "recursive albums only, subfolder photos only"). `bin/search_cover.sh` reads `sourcePath` from JSON to locate the original source file, making it useful for all photos.
+
+Changed: `SourcePath` is now always set, and is relative from the album's *source base directory* rather than from the album root itself. `LoadPhotos()` prefixes every photo's `SourcePath` with `filepath.Base(ap.AlbumConfig.Path)` after collection, so `sourcePath` includes the album folder name. For example, a photo `Craig's/img001.jpg` in an album sourced from `2008 - Big Sky/` gets `sourcePath: "2008 - Big Sky/Craig's/img001.jpg"`. For a root-level photo `foo.jpg` in that same album the result is `"2008 - Big Sky/foo.jpg"`. Removed `omitempty` from the JSON tag and TypeScript type since the field is now always present. Updated comments in `album.go`, `json.go`, `types.ts`, and `README-DEV.md`.
+
+#### `vips.Startup` Error Handling
+
+`init()` in `exif.go` called `vips.Startup(nil)` without checking the error. Fixed: now panics with `fmt.Errorf("vips startup failed: %w", err)` if startup fails. Passing an `error` to `panic` is idiomatic Go (preserves the error type and supports `%w` wrapping, unlike `fmt.Sprintf` which produces a plain string).
+
+#### `exit.go` Comment Style
+
+All exported function comments updated to proper Go doc comment style: each begins with the function name, uses complete sentences, and ends with a period.
+
+#### `vite.config.ts` Improvements
+
+- `loadSiteEnv()` now falls back to `sample/config/site.env` (with a warning) when `config/site.env` is absent and `$SITE_ENV` is not set. Fixes IntelliJ "Can't analyze vite.config.ts" error, which occurred because the config file hard-exited during static analysis when the default path was missing.
+- Extracted a shared `loadEnvFile(path)` helper used by both `loadSiteEnv()` and `loadDefaultsEnv()`, eliminating 12 lines of duplicated env-file parsing logic.
+- Added doc comments to all three functions.
+
+#### Undated Photos Sort to End
+
+The `sort.Slice` comparator `photos[i].DateTaken.Before(photos[j].DateTaken)` caused photos with no EXIF date (zero `time.Time`) to sort to the front, since `zero.Before(anyRealDate)` is true. Fixed with a new `sortByDate(photos []*Photo)` helper using `sort.SliceStable`: dated photos first (ascending), undated photos at the end in original scan order. Applied at all four sort call sites in `album.go`. New `TestSortByDate` unit tests cover all three cases; `TestCollectPhotosRecursive` gained an `undated photos sort to end in scan order` sub-case using a new `testdata/no-exif.jpg` fixture (minimal 10x10 JPEG with no EXIF).
+
+#### `computeDateSpan` Bug Fix
+
+`computeDateSpan()` used `ap.Photos[0].DateTaken` and `ap.Photos[len-1].DateTaken` as first/last dates. With undated photos now sorted to the end, `last` would be a zero time for any album containing undated photos, producing an incorrect or empty date span. Fixed: now scans `ap.Photos` to find the first and last non-zero `DateTaken`, ignoring undated photos entirely.
+
+#### `Photo.date` Renamed to `Photo.datetime` + Full Timestamp
+
+The `date` field in `index.json` (and the corresponding `Date string` Go struct field and `date: string` TypeScript type) stored only a date string (`"2003-03-09"`), discarding the time component. Since the field was unused in the frontend, renamed it to `datetime` / `DateTime` / `datetime` across Go, JSON, and TypeScript, and changed the format to RFC3339 (`time.RFC3339`), e.g. `"2003-03-09T12:00:30Z"`.
+
+EXIF timestamps carry no timezone; `parseExifDateTime` now uses `time.ParseInLocation(..., time.UTC)` to make the UTC treatment explicit (previously relied on `time.Parse`'s implicit UTC default). Updated fixture `testdata/index.json` and test assertion in `json_test.go`.
