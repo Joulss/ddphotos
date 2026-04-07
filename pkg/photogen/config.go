@@ -48,6 +48,8 @@ type Config struct {
 	Hero *HeroConfig
 	// CustomCSS is the absolute path to a CSS file to copy to the output. Empty means none.
 	CustomCSS string
+	// DefaultTheme is the site's default color theme: "light" or "dark". Empty means "dark".
+	DefaultTheme string
 	// expectedFiles tracks files generated in this run (for --clean).
 	expectedFiles map[string]bool
 }

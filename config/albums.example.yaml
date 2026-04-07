@@ -49,6 +49,10 @@ settings:
   # cleanest way to restyle without fighting specificity.
   # css: custom.css
 
+  # Default color theme for first-time visitors (before they toggle manually).
+  # Accepts "light" or "dark". Defaults to "dark" when omitted.
+  # default_theme: dark
+
 # Named source base paths. Albums reference these by name via the 'base' key.
 # Defining bases here lets you swap root paths between configs (e.g., prod vs.
 # laptop) without touching individual album entries.

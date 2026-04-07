@@ -1030,3 +1030,17 @@ web-npm-run-dev-https:
 ```
 
 `README-DEV.md` documents the feature under the "LAN Access" subsection: the secure context requirement, how to start HTTPS mode (`DEV_HTTPS=1 make web-npm-run-dev-https`), and the browser self-signed cert warning users must accept.
+
+### 55. Configurable Default Theme and `?clear` Improvement
+
+#### Configurable Default Theme
+
+Added a `default_theme` setting to `albums.yaml` that controls the site's initial color theme for first-time visitors (before they manually toggle). Accepts `"light"` or `"dark"`; defaults to `"dark"` when omitted.
+
+**Go backend**: `AlbumsSettings` gains a `DefaultTheme` field (validated to `"light"`, `"dark"`, or empty). It flows through `Config.DefaultTheme` and is written to `config.json` as `defaultTheme` (direct assignment; `omitempty` suppresses it when empty).
+
+**Flash prevention**: The existing inline script in `app.html` already runs before first paint to set `data-theme` on `<html>`. Since `%sveltekit.head%` is positioned before that script, the prerendered meta tag emitted by `+layout.svelte` (`<meta name="ddp-default-theme">`) is in the DOM when the script runs. The script reads it as the fallback instead of hardcoding `'dark'`.
+
+**Theme store**: `theme.ts` previously hardcoded `'dark'` as the fallback when localStorage has no stored value. It now reads `document.documentElement.getAttribute('data-theme')` — the value already applied by the inline script — so the Svelte store initialises to match what's on screen. This prevents a flash on first visit when the configured default is `'light'`.
+
+**`?clear` improvement**: The `?clear` URL parameter (developer/testing tool that wipes stored passwords) now also removes the `'theme'` key from localStorage. The `logout()` function in `+layout.svelte` is intentionally left unchanged — it clears auth state only.

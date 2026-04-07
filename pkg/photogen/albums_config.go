@@ -20,9 +20,10 @@ type AlbumsFile struct {
 type AlbumsSettings struct {
 	ID           string     `yaml:"id"` // site identifier; output goes to {DDPHOTOS_ALBUMS_DIR}/{id}/
 	SiteURL      string     `yaml:"site_url"`
-	Descriptions string     `yaml:"descriptions"` // filename relative to config dir
-	Passwords    string     `yaml:"passwords"`    // filename relative to config dir; enables encryption
-	CustomCSS    string     `yaml:"css"`          // filename relative to config dir; copied to output
+	Descriptions string     `yaml:"descriptions"`  // filename relative to config dir
+	Passwords    string     `yaml:"passwords"`     // filename relative to config dir; enables encryption
+	CustomCSS    string     `yaml:"css"`           // filename relative to config dir; copied to output
+	DefaultTheme string     `yaml:"default_theme"` // "light" or "dark" (default: "dark")
 	Hero         *HeroEntry `yaml:"hero"`
 
 	// Resolved paths (populated by ToAlbumConfigs; not from YAML).
@@ -82,6 +83,9 @@ func (af *AlbumsFile) validate() error {
 				return fmt.Errorf("album %q: base %q not defined in bases", a.Slug, a.Base)
 			}
 		}
+	}
+	if t := af.Settings.DefaultTheme; t != "" && t != "light" && t != "dark" {
+		return fmt.Errorf("settings: default_theme must be \"light\" or \"dark\", got %q", t)
 	}
 	if h := af.Settings.Hero; h != nil {
 		if h.Image == "" {

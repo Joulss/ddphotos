@@ -167,6 +167,7 @@
 					if (key?.startsWith('ddp_')) keys.push(key);
 				}
 				keys.forEach((k) => localStorage.removeItem(k));
+				localStorage.removeItem('theme');
 			} catch {
 				// localStorage not available (e.g. private browsing)
 			}

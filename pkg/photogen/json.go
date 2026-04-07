@@ -274,13 +274,14 @@ func (c *Config) WriteAlbumsIndex(summaries []AlbumSummary) error {
 
 // SiteConfig is the structure for config.json (always unencrypted).
 type SiteConfig struct {
-	SiteID     string            `json:"siteId"`
-	AlbumsFile string            `json:"albumsFile"`
-	SiteHint   string            `json:"siteHint,omitempty"`
-	AlbumHints map[string]string `json:"albumHints,omitempty"`
-	Encrypted  bool              `json:"encrypted,omitempty"` // true if any encryption is configured
-	HeroImage  string            `json:"heroImage,omitempty"` // "hero.jpg" if a hero image is configured
-	CustomCSS  string            `json:"customCss,omitempty"` // "custom.css" if a CSS override is configured
+	SiteID       string            `json:"siteId"`
+	AlbumsFile   string            `json:"albumsFile"`
+	SiteHint     string            `json:"siteHint,omitempty"`
+	AlbumHints   map[string]string `json:"albumHints,omitempty"`
+	Encrypted    bool              `json:"encrypted,omitempty"`    // true if any encryption is configured
+	HeroImage    string            `json:"heroImage,omitempty"`    // "hero.jpg" if a hero image is configured
+	CustomCSS    string            `json:"customCss,omitempty"`    // "custom.css" if a CSS override is configured
+	DefaultTheme string            `json:"defaultTheme,omitempty"` // "light" or "dark"; omitted when dark (the built-in default)
 }
 
 // WriteConfigJSON writes config.json indicating which albums file to load.
@@ -310,6 +311,7 @@ func (c *Config) WriteConfigJSON() error {
 	if c.CustomCSS != "" {
 		cfg.CustomCSS = "custom.css"
 	}
+	cfg.DefaultTheme = c.DefaultTheme
 	if err := writeJSON(outputPath, cfg); err != nil {
 		return err
 	}

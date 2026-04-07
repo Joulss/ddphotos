@@ -14,8 +14,10 @@
 		     the current build's cover URLs and never fetch stale files from a previous build. -->
 		<script>
 			(function () {
-				var theme = localStorage.getItem('theme');
-				if (theme) document.documentElement.setAttribute('data-theme', theme);
+				var themeMeta = document.querySelector('meta[name="ddp-default-theme"]');
+				var defaultTheme = (themeMeta && themeMeta.getAttribute('content')) || 'dark';
+				var theme = localStorage.getItem('theme') || defaultTheme;
+				document.documentElement.setAttribute('data-theme', theme);
 				try {
 					// Read siteId from the pre-rendered meta tag, not from localStorage.
 					// This guarantees we always use the current build's siteId, even on the first

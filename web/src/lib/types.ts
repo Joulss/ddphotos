@@ -47,4 +47,5 @@ export interface SiteConfig {
 	encrypted?: boolean;
 	heroImage?: string;
 	customCss?: string;
+	defaultTheme?: string;
 }
