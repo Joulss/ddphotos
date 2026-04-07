@@ -107,20 +107,14 @@ web-npm-run-dev-https:
 web-npm-build:
 	$(NODE_INIT) cd web && SITE_ENV=$(SITE_ENV) DDPHOTOS_ALBUMS_DIR=$(DDPHOTOS_ALBUMS_DIR) DDPHOTOS_SITE_ID=$(DDPHOTOS_SITE_ID) npm run build
 
-DOCKER_SCHEMA := 2
-
 .PHONY: web-docker-build
 ## web-docker-build: build the photos Apache Docker image
 web-docker-build:
-	docker build -t photos-apache web/
+	bin/docker-check.sh --force
 
 .PHONY: _check-docker-schema
 _check-docker-schema:
-	@label=$$(docker image inspect photos-apache \
-		--format '{{index .Config.Labels "ddphotos.schema"}}' 2>/dev/null); \
-	[ "$$label" = "$(DOCKER_SCHEMA)" ] || { \
-		echo "ERROR: photos-apache image is stale or missing (expected schema=$(DOCKER_SCHEMA), got '$$label')."; \
-		echo "Run: make web-docker-build"; exit 1; }
+	bin/docker-check.sh
 
 .PHONY: web-docker-run
 ## web-docker-run: run the photos Apache Docker container on port 8080
