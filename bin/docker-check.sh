@@ -17,6 +17,11 @@ case "${1:-}" in
     *) echo "Usage: $0 [--build|--force]" >&2; exit 1 ;;
 esac
 
+if ! docker info >/dev/null 2>&1; then
+    echo "ERROR: Docker daemon is not running."
+    exit 1
+fi
+
 expected=$(cat "$SDIR/../web/Dockerfile" "$SDIR/../web/entrypoint.sh" | shasum -a 256 | cut -d' ' -f1)
 
 _build() {
