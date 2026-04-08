@@ -107,23 +107,41 @@ web-npm-run-dev-https:
 web-npm-build:
 	$(NODE_INIT) cd web && SITE_ENV=$(SITE_ENV) DDPHOTOS_ALBUMS_DIR=$(DDPHOTOS_ALBUMS_DIR) DDPHOTOS_SITE_ID=$(DDPHOTOS_SITE_ID) npm run build
 
-.PHONY: web-docker-build
-## web-docker-build: build the photos Apache Docker image
-web-docker-build:
+.PHONY: web-docker-build-apache
+## web-docker-build-apache: build the photos Apache Docker image
+web-docker-build-apache:
 	bin/docker-check.sh --force
 
-.PHONY: _check-docker-schema
-_check-docker-schema:
-	bin/docker-check.sh
+.PHONY: web-docker-build-nginx
+## web-docker-build-nginx: build the photos nginx Docker image
+web-docker-build-nginx:
+	bin/docker-check.sh --server nginx --force
 
-.PHONY: web-docker-run
-## web-docker-run: run the photos Apache Docker container on port 8080
-web-docker-run: _check-docker-schema
+.PHONY: _check-docker-schema-apache
+_check-docker-schema-apache:
+	bin/docker-check.sh --server apache
+
+.PHONY: _check-docker-schema-nginx
+_check-docker-schema-nginx:
+	bin/docker-check.sh --server nginx
+
+.PHONY: web-docker-run-apache
+## web-docker-run-apache: run the photos Apache Docker container on port 8080
+web-docker-run-apache: _check-docker-schema-apache
 	docker run --rm -p 8080:80 \
 		-e DDPHOTOS_SITE_ID=$(DDPHOTOS_SITE_ID) \
 		-v $(PWD)/build:/build:ro \
 		-v $(DDPHOTOS_ALBUMS_DIR)/$(DDPHOTOS_SITE_ID):/albums:ro \
 		photos-apache
+
+.PHONY: web-docker-run-nginx
+## web-docker-run-nginx: run the photos nginx Docker container on port 8080
+web-docker-run-nginx: _check-docker-schema-nginx
+	docker run --rm -p 8080:80 \
+		-e DDPHOTOS_SITE_ID=$(DDPHOTOS_SITE_ID) \
+		-v $(PWD)/build:/build:ro \
+		-v $(DDPHOTOS_ALBUMS_DIR)/$(DDPHOTOS_SITE_ID):/albums:ro \
+		photos-nginx
 
 .PHONY: web-docker-stop
 ## web-docker-stop: stop the running photos Apache Docker container
@@ -131,14 +149,19 @@ web-docker-stop:
 	docker stop $$(docker ps -q --filter publish=8080) 2>/dev/null || true
 
 .PHONY: web-docker-test
-## web-docker-test: run Apache routing tests against the local Docker container
+## web-docker-test: run server routing tests against the local Docker container
 web-docker-test:
-	bin/test-photos-apache.sh --local 8080
+	bin/test-photos-server.sh --local 8080
 
 .PHONY: web-playwright-test-apache
 ## web-playwright-test-apache: run Playwright e2e tests (no passwords) against Docker/Apache only
 web-playwright-test-apache:
 	bin/run-tests.sh --mode apache
+
+.PHONY: web-playwright-test-nginx
+## web-playwright-test-nginx: run Playwright e2e tests (no passwords) against Docker/nginx only
+web-playwright-test-nginx:
+	bin/run-tests.sh --mode nginx
 
 .PHONY: web-playwright-test-dev
 ## web-playwright-test-dev: run Playwright e2e tests (no passwords) against Vite dev server only
@@ -146,14 +169,14 @@ web-playwright-test-dev:
 	bin/run-tests.sh --mode dev
 
 .PHONY: web-playwright-test-all
-## web-playwright-test-all: run Playwright e2e tests against all password variants (dev + apache)
+## web-playwright-test-all: run Playwright e2e tests against all password variants (dev + apache + nginx)
 web-playwright-test-all:
 	bin/test-all.sh
 
 .PHONY: web-screenshots
 ## web-screenshots: capture screenshots and regenerate composite — requires a running server on port 8080
 web-screenshots:
-	# run `make sample-photogen sample-build web-docker-run` to start docker/apache for this script
+	# run `make sample-photogen sample-build web-docker-run-apache` to start docker/apache for this script
 	$(NODE_INIT) cd web && node scripts/screenshots.mjs --album antarctica --photo 4
 	.venv/bin/python3 bin/generate-screenshot-composite.py
 
@@ -193,8 +216,8 @@ sample-build:
 	SITE_ENV=sample/config/site.env $(MAKE) web-npm-build
 
 .PHONY: sample-test-apache
-## sample-test-apache: run test-photos-apache.sh tests against local Docker container on port 8082 (starts/stops Docker automatically)
-sample-test-apache: _check-docker-schema
+## sample-test-apache: run routing tests against local Apache Docker container on port 8082 (starts/stops Docker automatically)
+sample-test-apache: _check-docker-schema-apache
 	@test -d build/$(DDPHOTOS_SITE_ID) || { echo "Error: build/$(DDPHOTOS_SITE_ID) not found. Run 'make web-npm-build' first."; exit 1; }
 	docker run -d --rm --name sample-test-apache -p 8082:80 \
 		-e DDPHOTOS_SITE_ID=$(DDPHOTOS_SITE_ID) \
@@ -203,8 +226,22 @@ sample-test-apache: _check-docker-schema
 		photos-apache
 	@echo "Waiting for Apache to be ready..."; \
 	until curl -s -o /dev/null http://localhost:8082; do sleep 1; done
-	bin/test-photos-apache.sh --config-dir sample/config --local 8082; \
+	bin/test-photos-server.sh --config-dir sample/config --local 8082; \
 	EXIT=$$?; docker stop sample-test-apache 2>/dev/null || true; exit $$EXIT
+
+.PHONY: sample-test-nginx
+## sample-test-nginx: run routing tests against local nginx Docker container on port 8082 (starts/stops Docker automatically)
+sample-test-nginx: _check-docker-schema-nginx
+	@test -d build/$(DDPHOTOS_SITE_ID) || { echo "Error: build/$(DDPHOTOS_SITE_ID) not found. Run 'make web-npm-build' first."; exit 1; }
+	docker run -d --rm --name sample-test-nginx -p 8082:80 \
+		-e DDPHOTOS_SITE_ID=$(DDPHOTOS_SITE_ID) \
+		-v $(PWD)/build:/build:ro \
+		-v $(DDPHOTOS_ALBUMS_DIR)/$(DDPHOTOS_SITE_ID):/albums:ro \
+		photos-nginx
+	@echo "Waiting for nginx to be ready..."; \
+	until curl -s -o /dev/null http://localhost:8082; do sleep 1; done
+	bin/test-photos-server.sh --config-dir sample/config --local 8082; \
+	EXIT=$$?; docker stop sample-test-nginx 2>/dev/null || true; exit $$EXIT
 
 .PHONY: sample-npm-run-dev
 ## sample-npm-run-dev: run npm dev server using sample config
