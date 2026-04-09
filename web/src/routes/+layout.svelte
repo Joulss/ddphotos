@@ -233,7 +233,7 @@
 
 	footer {
 		text-align: center;
-		padding: 1rem 1rem;
+		padding: 1rem 1rem 1.5rem;
 		color: var(--text-muted);
 		font-size: 0.85rem;
 		opacity: 0;
@@ -323,8 +323,12 @@
 
 	.modal-body dt {
 		color: var(--text-muted);
-		font-weight: 500;
+		font-weight: 700;
 		white-space: nowrap;
+	}
+
+	.modal-body dt::after {
+		content: ':';
 	}
 
 	.modal-body dd {
