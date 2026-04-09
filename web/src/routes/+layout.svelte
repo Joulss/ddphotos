@@ -25,6 +25,22 @@
 	}
 
 	const builtOn = formatBuildTime(import.meta.env.VITE_BUILD_TIME);
+	const gitDescribe = import.meta.env.VITE_GIT_DESCRIBE as string;
+	const gitBranch = import.meta.env.VITE_GIT_BRANCH as string;
+	const gitRepoSlug = import.meta.env.VITE_GIT_REPO_SLUG as string;
+	const gitRepoUrl = import.meta.env.VITE_GIT_REPO_URL as string;
+	const showBranch = gitBranch && gitBranch !== 'main';
+
+	let showAbout = $state(false);
+
+	function openAbout() { showAbout = true; }
+	function closeAbout() { showAbout = false; }
+	function handleOverlayClick(e: MouseEvent) {
+		if (e.target === e.currentTarget) closeAbout();
+	}
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') closeAbout();
+	}
 
 	function logout() {
 		try {
@@ -88,9 +104,35 @@
 	{@render children()}
 	<footer class:ready={!page.data.encryptedBlob || $footerReady}>
 		<div>Copyright © {import.meta.env.VITE_COPYRIGHT_YEAR}-{new Date().getFullYear()}. {import.meta.env.VITE_COPYRIGHT_OWNER}.</div>
-		<div class="built-with">Built {builtOn} with <a href="https://github.com/dougdonohoe/ddphotos" target="_blank" rel="noopener">ddphotos</a>.</div>
+		<div class="built-with">Built {builtOn} with <button class="about-btn" onclick={openAbout}>DD Photos</button>.</div>
 	</footer>
+
+	{#if showAbout}
+		<div class="modal-overlay" role="presentation" onclick={handleOverlayClick}>
+			<div class="modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
+				<div class="modal-header">
+					<span id="about-title">About this site</span>
+					<button class="modal-close" onclick={closeAbout} aria-label="Close">&#x2715;</button>
+				</div>
+				<dl class="modal-body">
+					<dt>Built</dt>
+					<dd>{builtOn}</dd>
+					<dt>Version</dt>
+					<dd>{gitDescribe}</dd>
+					{#if showBranch}
+						<dt>Branch</dt>
+						<dd>{gitBranch}</dd>
+					{/if}
+					<dt>Source</dt>
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+					<dd><a href={gitRepoUrl} target="_blank" rel="noopener">{gitRepoSlug}</a></dd>
+				</dl>
+			</div>
+		</div>
+	{/if}
 </div>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <style>
 	:global(:root) {
@@ -206,11 +248,92 @@
 		margin-top: 0.35rem;
 	}
 
-	:global(:root) .built-with a {
+	.about-btn {
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		font-size: inherit;
+		font-family: inherit;
 		color: #5a8ec0;
 	}
 
-	:global(:root[data-theme='light']) .built-with a {
+	:global(:root[data-theme='light']) .about-btn {
+		color: var(--link-color);
+	}
+
+	.about-btn:hover {
+		text-decoration: underline;
+	}
+
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.6);
+		z-index: 100;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.modal {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-color);
+		border-radius: 8px;
+		width: 360px;
+		max-width: calc(100vw - 2rem);
+		box-shadow: 0 8px 32px var(--shadow-color);
+	}
+
+	.modal-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1rem 1rem 0.75rem;
+		border-bottom: 1px solid var(--border-color);
+		font-weight: 600;
+		font-size: 1.25rem;
+		color: var(--text-color);
+	}
+
+	.modal-close {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--text-muted);
+		font-size: 1rem;
+		line-height: 1;
+		padding: 0.15rem 0.3rem;
+		border-radius: 4px;
+		transition: color 0.15s;
+	}
+
+	.modal-close:hover {
+		color: var(--text-color);
+	}
+
+	.modal-body {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 0.5rem 1.25rem;
+		padding: 1rem;
+		margin: 0;
+		font-size: 0.875rem;
+	}
+
+	.modal-body dt {
+		color: var(--text-muted);
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.modal-body dd {
+		margin: 0;
+		color: var(--text-color);
+		word-break: break-all;
+	}
+
+	.modal-body a {
 		color: var(--link-color);
 	}
 </style>

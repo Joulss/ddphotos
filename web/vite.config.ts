@@ -1,4 +1,5 @@
 import { readFileSync, existsSync, createReadStream, statSync } from 'fs';
+import { execSync } from 'child_process';
 import { resolve, join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { sveltekit } from '@sveltejs/kit/vite';
@@ -70,6 +71,30 @@ function resolveAlbumsDir(): string {
 const albumsDir = resolveAlbumsDir();
 
 process.env.VITE_BUILD_TIME = new Date().toISOString();
+
+function gitInfo(cmd: string): string {
+	try {
+		return execSync(cmd, { encoding: 'utf-8' }).trim();
+	} catch {
+		return 'unknown';
+	}
+}
+process.env.VITE_GIT_DESCRIBE = gitInfo('git describe --tags --long --dirty --always');
+process.env.VITE_GIT_BRANCH = gitInfo('git rev-parse --abbrev-ref HEAD');
+
+// Parse git remote URL into { slug: "owner/repo", url: "https://github.com/owner/repo" }.
+// Handles both https://github.com/owner/repo[.git] and git@github.com:owner/repo[.git].
+function gitRemote(): { slug: string; url: string } {
+	const raw = gitInfo('git remote get-url origin');
+	const match = raw.match(/[:/]([^/:]+\/[^/]+?)(?:\.git)?$/);
+	if (!match) return { slug: raw, url: raw };
+	const slug = match[1];
+	const host = raw.includes('github.com') ? 'https://github.com' : 'https://' + (raw.match(/[@/]([^/:@]+\.com)/)?.[1] ?? 'github.com');
+	return { slug, url: `${host}/${slug}` };
+}
+const remote = gitRemote();
+process.env.VITE_GIT_REPO_SLUG = remote.slug;
+process.env.VITE_GIT_REPO_URL = remote.url;
 
 // When DEV_HTTPS=1, load @vitejs/plugin-basic-ssl to serve the dev server over HTTPS.
 // This is needed for mobile testing via LAN IP (crypto.subtle requires a secure context).
