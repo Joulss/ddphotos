@@ -48,10 +48,16 @@ else
     HASH_INPUTS="$WEB/nginx.dockerfile $WEB/nginx-entrypoint.sh $WEB/nginx.conf $WEB/setup-htdocs.sh"
 fi
 
+# Local hash file is the primary source of truth for freshness.
+# Docker image labels are unreliable — Docker Desktop can lose them across
+# restarts or GC events while the image itself survives.
+HASH_FILE="$WEB/.docker-hash-$SERVER"
+
 expected=$(cat $HASH_INPUTS | shasum -a 256 | cut -d' ' -f1)
 
 _build() {
     docker build -t "$IMAGE" -f "$DOCKERFILE" --label "ddphotos.hash=$expected" "$WEB/"
+    echo "$expected" > "$HASH_FILE"
 }
 
 if [ "$MODE" = force ]; then
@@ -59,7 +65,7 @@ if [ "$MODE" = force ]; then
     exit 0
 fi
 
-stored=$(docker image inspect "$IMAGE" --format '{{index .Config.Labels "ddphotos.hash"}}' 2>/dev/null || true)
+stored=$(cat "$HASH_FILE" 2>/dev/null || true)
 
 if [ "$stored" = "$expected" ]; then
     exit 0
