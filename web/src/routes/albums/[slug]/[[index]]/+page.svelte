@@ -69,6 +69,8 @@
 	let activePopstateHandler: (() => void) | null = null;
 	// Scroll target set as user navigates in the lightbox; applied on close.
 	let pendingScrollY: number | null = null;
+	// Photo index to focus in the grid when the lightbox closes.
+	let pendingFocusIndex: number | null = null;
 
 	// Image fade-in state. Populated by the $effect below, which re-runs on album change.
 	let imageSrcs = $state<string[]>([]); // src per image; empty string = not yet assigned
@@ -152,6 +154,7 @@
 	}
 
 	function openLightbox(index: number, animate = true) {
+		pendingFocusIndex = index;
 		const pswp = new PhotoSwipe({
 			dataSource: photoswipeItems,
 			index,
@@ -217,21 +220,29 @@
 					replaceState(`/albums/${data.slug}`, {});
 				}
 
-				if (target !== null) {
-					// SvelteKit resets scroll twice after history.go(-1):
-					//   1. Synchronous (~2 frames): handled by the first rAF iteration
-					//   2. Async (~300-500ms, after load fn completes): handled by subsequent iterations
-					// Run every frame for 700ms; re-apply target whenever a reset is detected.
-					// Any visible flash is at most one frame (~16ms).
-					const deadline = performance.now() + 700;
-					const guard = () => {
-						if (Math.abs(window.scrollY - target) > 1) {
-								window.scrollTo({ top: target, behavior: 'instant' });
-						}
-						if (performance.now() < deadline) requestAnimationFrame(guard);
-					};
-					requestAnimationFrame(guard);
-				}
+				const focusIdx = pendingFocusIndex;
+				pendingFocusIndex = null;
+				// Cache the button to focus (queried once, before the guard loop starts).
+				const focusBtn = (focusIdx !== null && container)
+					? (container.querySelectorAll<HTMLElement>('.photo')[focusIdx] ?? null)
+					: null;
+
+				// Run a guard loop for 700ms to fight both PhotoSwipe's built-in focus
+				// restoration (fires first frame) and SvelteKit's async focus reset (fires
+				// ~300-500ms in, same as its scroll reset). Re-apply only when focus has
+				// moved elsewhere to avoid redundant focus events.
+				// Also re-applies scroll if SvelteKit resets it (same as before).
+				const deadline = performance.now() + 700;
+				const guard = () => {
+					if (target !== null && Math.abs(window.scrollY - target) > 1) {
+						window.scrollTo({ top: target, behavior: 'instant' });
+					}
+					if (focusBtn && document.activeElement !== focusBtn) {
+						focusBtn.focus({ preventScroll: true });
+					}
+					if (performance.now() < deadline) requestAnimationFrame(guard);
+				};
+				requestAnimationFrame(guard);
 			}
 			// closedByBackNav: back button already navigated to the correct URL; nothing to do.
 		});
@@ -263,6 +274,7 @@
 			// lightbox closes. Applied via afterNavigate (history.go(-1) case) or directly
 			// in the close handler (replaceState case) — both fire after SvelteKit's own
 			// scroll restoration, ensuring we override it.
+			pendingFocusIndex = pswp.currIndex;
 			if (container) {
 				const box = layout().boxes[pswp.currIndex];
 				const galleryTop = container.getBoundingClientRect().top + window.scrollY;
