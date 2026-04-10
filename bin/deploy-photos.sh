@@ -3,7 +3,7 @@
 set -eo pipefail
 
 # Parse flags
-SKIP_PHOTOGEN=false
+SKIP_PHOTOGEN=${NO_PHOTOGEN:+true}; SKIP_PHOTOGEN=${SKIP_PHOTOGEN:-false}
 SKIP_RSYNC=false
 SKIP_PLAYWRIGHT=false
 SKIP_APACHE_TEST=false
