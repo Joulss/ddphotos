@@ -133,7 +133,9 @@ else
 fi
 
 RSYNC_OPTS="-avz --checksum --delete"
+RSYNC_OPTS_ALBUMS="-avz --delete"
 [ "$DRY_RUN" = true ] && RSYNC_OPTS="$RSYNC_OPTS --dry-run"
+[ "$DRY_RUN" = true ] && RSYNC_OPTS_ALBUMS="$RSYNC_OPTS_ALBUMS --dry-run"
 
 if [ "$SKIP_RSYNC" = true ]; then
     echo "Skipping rsync, CloudFront invalidation, and post-deploy test (--no-rsync)"
@@ -141,7 +143,8 @@ else
     [ "$DRY_RUN" = true ] && echo "=== DRY RUN: rsync will not transfer any files ==="
 
     # Deploy app files + pre-rendered album HTML/JSON.
-    # --checksum: rsync skips files with matching content (Vite resets timestamps on static/ files)
+    # --checksum: Vite resets timestamps on build output files every build, so size+time
+    #   is not a reliable change signal; content comparison is needed.
     # --filter='protect albums/**': prevent --delete from touching albums/ content (hero.jpg,
     #   sitemap.xml, images, JSON) — those files are managed by the second rsync pass below.
     #   Note: 'protect' only suppresses deletion; it still transfers new files from the source.
@@ -151,9 +154,11 @@ else
         "$REPO_ROOT/build/$DDPHOTOS_SITE_ID/" "$AWS_APACHE":"$RSYNC_DEST"
 
     # Deploy album data (images + JSON) independently.
+    # No --checksum: photogen preserves timestamps on existing files, so size+time is a
+    #   reliable change signal and content comparison is unnecessary overhead.
     # --exclude=*.html: don't delete pre-rendered .html pages synced above
     # shellcheck disable=SC2086
-    rsync $RSYNC_OPTS \
+    rsync $RSYNC_OPTS_ALBUMS \
         --exclude=*.html \
         "$DDPHOTOS_ALBUMS_DIR/$DDPHOTOS_SITE_ID/" \
         "$AWS_APACHE":"${RSYNC_DEST}albums/"
