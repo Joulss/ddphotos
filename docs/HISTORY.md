@@ -1133,3 +1133,42 @@ requestAnimationFrame(guard);
 ```
 
 Any individual flash caused by a SvelteKit reset is at most one frame (~16ms) — imperceptible at 60fps. The guard covers both the immediate synchronous reset and the async one at ~400ms. All changes are in `web/src/routes/albums/[slug]/[[index]]/+page.svelte`.
+
+### 58. Lightbox Grid Focus Tracking
+
+A natural follow-on to session 57. When the lightbox closes, the grid now scrolls to the last photo viewed — but keyboard focus was returning to whatever the browser chose, not that photo. The goal: focus the grid button for the last-viewed photo when the lightbox closes, so keyboard users can immediately interact with it.
+
+#### Why This Was Tricky
+
+Three separate things fight for focus on close, in sequence:
+
+**1. PhotoSwipe's built-in focus restoration.**
+When a modal closes, accessibility conventions say focus should return to the element that opened it. PhotoSwipe does this: on close it synchronously focuses the trigger button (the photo that was clicked to open the lightbox). This is the right behavior for the common case, but wrong when the user has navigated to a different photo.
+
+**2. SvelteKit resets focus during navigation.**
+Just as SvelteKit resets scroll after `history.go(-1)`, it also resets focus — to the body or a landmark element. This happens asynchronously at ~300–500ms, the same window as the scroll reset.
+
+**3. Decoupling focus from the 700ms scroll guard.**
+An early version called `focus()` at the *end* of the scroll guard loop (after 700ms). That correctly beat SvelteKit's reset, but meant the PhotoSwipe-restored focus sat on the wrong button for the full 700ms — clearly visible. Moving focus to a single `requestAnimationFrame` fixed the flash but then SvelteKit's async reset won at ~400ms.
+
+#### Solution
+
+Track the last-viewed photo index (`pendingFocusIndex`) alongside `pendingScrollY` — initialized when `openLightbox` is called and updated on every `change` event. On close, fold focus into the same guard loop as scroll:
+
+```js
+const focusBtn = container.querySelectorAll('.photo')[focusIdx];
+
+const guard = () => {
+    if (target !== null && Math.abs(window.scrollY - target) > 1) {
+        window.scrollTo({ top: target, behavior: 'instant' });
+    }
+    if (focusBtn && document.activeElement !== focusBtn) {
+        focusBtn.focus({ preventScroll: true });
+    }
+    if (performance.now() < deadline) requestAnimationFrame(guard);
+};
+```
+
+The `document.activeElement !== focusBtn` check avoids redundant focus events — `focus()` is only called when something has actually stolen focus. `preventScroll: true` ensures the focus call doesn't fight the scroll guard. The guard fires on the first frame (beating PhotoSwipe's restoration) and continues through the 700ms window (beating SvelteKit's async reset).
+
+Why not configure SvelteKit to skip scroll/focus restoration instead? SvelteKit's `noscroll` and `keepfocus` options apply to `goto()` calls, not to popstate navigations from `history.go(-1)`. And replacing `history.go(-1)` with `goto({ replaceState: true })` would leave a duplicate `/albums/slug` entry in the history stack — the user would need an extra back press to leave the album. Clean history is worth the guard loop.
