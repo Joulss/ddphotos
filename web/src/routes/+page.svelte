@@ -311,7 +311,7 @@
 					<div class="album-info">
 						<h2>{album.title}</h2>
 						{#if album.description}
-							<p class="description">{album.description}</p>
+							<p class="description">{@html album.description}</p>
 						{/if}
 						<p class="meta">{album.count} photos{album.dateSpan ? ` · ${album.dateSpan}` : ''}</p>
 					</div>

@@ -514,7 +514,7 @@
 			<a href="/">← Albums</a>
 			<h1>{albumTitle}</h1>
 			{#if description}
-				<p class="description">{description}</p>
+				<p class="description">{@html description}</p>
 			{/if}
 			<p class="meta">
 				{album.photos.length} photos{dateSpan ? ` · ${dateSpan}` : ''}
