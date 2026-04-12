@@ -777,8 +777,7 @@ signed-request mechanism called OAC (Origin Access Control).
 
 ```mermaid
 flowchart LR
-    User -->|HTTPS| WAF["WAFv2 Web ACL (optional)"]
-    WAF --> CF["CloudFront CDN\n+ CloudFront Function"]
+    User -->|HTTPS| CF["CloudFront CDN\n+ CloudFront Function"]
     CF -->|SigV4| S3["S3 Bucket (private)"]
 ```
 
@@ -795,7 +794,6 @@ Several AWS components are needed to serve an S3-based site:
 | **CloudFront distribution**     | CDN that serves from S3 via OAC. Requires custom error responses (see below).                                                         |
 | **CloudFront Function**         | Lightweight JavaScript function (viewer-request stage) that handles URL routing. See below.                                           |
 | **DNS**                         | CNAME or alias record pointing your domain to the CloudFront distribution domain name.                                                |
-| **WAFv2 Web ACL**               | *(optional)* Blocks bots and malicious traffic before requests reach CloudFront.                                                      |
 
 **Custom error responses:** A private S3 bucket returns `403 Forbidden` (not `404`) for keys that
 don't exist — returning `404` would confirm the key's absence and enable bucket enumeration.
