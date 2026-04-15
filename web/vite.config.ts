@@ -113,6 +113,16 @@ export default defineConfig({
 		{
 			name: 'albums-dev-server',
 			configureServer(server) {
+				// Log every HTTP request when LOG_REQUESTS=1 (useful for diagnosing
+				// full-page-reload vs. client-side navigation on mobile).
+				if (process.env.LOG_REQUESTS) {
+					server.middlewares.use((req, _res, next) => {
+						const ts = new Date().toISOString().slice(11, 23); // HH:MM:SS.mmm
+						console.log(`[${ts}] ${req.method} ${req.url}`);
+						next();
+					});
+				}
+
 				// Serve DDPHOTOS_ALBUMS_DIR/DDPHOTOS_SITE_ID at /albums/** during dev.
 				server.middlewares.use('/albums', (req, res, next) => {
 					const filePath = join(albumsDir, req.url ?? '/');

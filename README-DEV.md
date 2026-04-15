@@ -92,6 +92,14 @@ real browser load cycle rather than just a visual trick. Works on production too
 https://photos.example.com/albums/your-album?slow
 ```
 
+## Logging Dev Server Requests
+
+To see each request to the dev server (useful in debugging) set `LOG_REQUESTS=1`:
+
+```bash
+LOG_REQUESTS=1 make sample-npm-run-dev
+```
+
 ## Environment Variables
 
 The `site.env` variables are:
