@@ -227,12 +227,12 @@
 					? (container.querySelectorAll<HTMLElement>('.photo')[focusIdx] ?? null)
 					: null;
 
-				// Run a guard loop for 700ms to fight both PhotoSwipe's built-in focus
+				// Run a guard loop for 1000ms to fight both PhotoSwipe's built-in focus
 				// restoration (fires first frame) and SvelteKit's async focus reset (fires
 				// ~300-500ms in, same as its scroll reset). Re-apply only when focus has
 				// moved elsewhere to avoid redundant focus events.
 				// Also re-applies scroll if SvelteKit resets it (same as before).
-				const deadline = performance.now() + 700;
+				const deadline = performance.now() + 1000;
 				const guard = () => {
 					if (target !== null && Math.abs(window.scrollY - target) > 1) {
 						window.scrollTo({ top: target, behavior: 'instant' });
