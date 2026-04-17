@@ -100,7 +100,7 @@ cd web
 source "$HOME/.nvm/nvm.sh"
 SITE_ENV="$SITE_ENV" DDPHOTOS_ALBUMS_DIR="$DDPHOTOS_ALBUMS_DIR" DDPHOTOS_SITE_ID="$DDPHOTOS_SITE_ID" npm run build
 
-# Local server test before deploying (rsync mode only — not applicable for S3).
+# Docker cleanup (used in tests)
 DOCKER_STARTED=false
 _docker_cleanup() {
     if [ "$DOCKER_STARTED" = true ]; then
@@ -109,40 +109,86 @@ _docker_cleanup() {
     fi
 }
 trap _docker_cleanup EXIT
-if [ "$S3_MODE" = true ]; then
-    echo "Skipping pre-deploy local tests (--s3 mode)"
-elif [ "$SKIP_SERVER_TEST" = true ]; then
-    echo "Skipping local server tests (--no-server-test)"
-else
-    # Verify Docker image is current before running
-    "$SDIR/docker-check.sh"
 
-    DOCKER_RUNNING=$(docker ps -q --filter publish=8080)
-    if [ -n "$DOCKER_RUNNING" ]; then
-        echo "Docker already running on port 8080, using existing container..."
+# Pre-deploy: run local Docker server tests and Playwright (rsync mode only; skipped for S3).
+_pre_deploy() {
+    if [ "$S3_MODE" = true ]; then
+        echo "Skipping pre-deploy local tests (--s3 mode)"
+    elif [ "$SKIP_SERVER_TEST" = true ]; then
+        echo "Skipping local server tests (--no-server-test)"
     else
-        echo "Starting local Docker container for testing..."
-        docker run -d --rm -p 8080:80 \
-            -e DDPHOTOS_SITE_ID="$DDPHOTOS_SITE_ID" \
-            -v "$REPO_ROOT/build":/build:ro \
-            -v "$DDPHOTOS_ALBUMS_DIR/$DDPHOTOS_SITE_ID":/albums:ro \
-            photos-apache > /dev/null
-        DOCKER_STARTED=true
-        sleep 1
+        # Verify Docker image is current before running
+        "$SDIR/docker-check.sh"
+
+        DOCKER_RUNNING=$(docker ps -q --filter publish=8080)
+        if [ -n "$DOCKER_RUNNING" ]; then
+            echo "Docker already running on port 8080, using existing container..."
+        else
+            echo "Starting local Docker container for testing..."
+            docker run -d --rm -p 8080:80 \
+                -e DDPHOTOS_SITE_ID="$DDPHOTOS_SITE_ID" \
+                -v "$REPO_ROOT/build":/build:ro \
+                -v "$DDPHOTOS_ALBUMS_DIR/$DDPHOTOS_SITE_ID":/albums:ro \
+                photos-apache > /dev/null
+            DOCKER_STARTED=true
+            sleep 1
+        fi
+
+        echo "Running local server tests..."
+        TEST_ARGS=(--local 8080)
+        [ -n "$CONFIG_DIR" ] && TEST_ARGS+=(--config-dir "$CONFIG_DIR")
+        "$SDIR/test-photos-server.sh" "${TEST_ARGS[@]}"
+
+        if [ "$SKIP_PLAYWRIGHT" = true ]; then
+            echo "Skipping pre-deploy Playwright tests (--no-playwright)"
+        else
+            echo "Running pre-deploy Playwright e2e tests..."
+            npx playwright test
+        fi
+    fi
+}
+
+# Post-deploy: invalidate CloudFront, run server tests, run Playwright against production.
+# Argument: "s3" to pass --s3 to test-photos-server.sh (S3 mode), empty for rsync mode.
+_post_deploy() {
+    local mode="${1:-}"
+
+    # Clear cache (skipped in dry-run mode)
+    if [ "$DRY_RUN" = true ]; then
+        echo "DRY RUN: skipping CloudFront invalidation"
+    else
+        aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_ID" --paths "/*" \
+            --query 'Invalidation.Id' --output text
     fi
 
-    echo "Running local server tests..."
-    TEST_ARGS=(--local 8080)
-    [ -n "$CONFIG_DIR" ] && TEST_ARGS+=(--config-dir "$CONFIG_DIR")
-    "$SDIR/test-photos-server.sh" "${TEST_ARGS[@]}"
+    if [ "$SKIP_SERVER_TEST" = true ]; then
+        echo "Skipping post-deploy server tests (--no-server-test)"
+    elif [ "$DRY_RUN" = true ]; then
+        echo "DRY RUN: skipping post-deploy server tests"
+    else
+        echo "Sleeping 5 to allow cache to clear..."
+        sleep 5
+        PROD_ARGS=(--remote "$SITE_URL")
+        [ "$mode" = "s3" ] && PROD_ARGS=(--s3 "${PROD_ARGS[@]}")
+        [ -n "$CONFIG_DIR" ] && PROD_ARGS+=(--config-dir "$CONFIG_DIR")
+        "$SDIR/test-photos-server.sh" "${PROD_ARGS[@]}"
+    fi
 
     if [ "$SKIP_PLAYWRIGHT" = true ]; then
-        echo "Skipping pre-deploy Playwright tests (--no-playwright)"
+        echo "Skipping Playwright tests against production (--no-playwright)"
+    elif [ "$DRY_RUN" = true ]; then
+        echo "DRY RUN: skipping Playwright tests against production"
     else
-        echo "Running pre-deploy Playwright e2e tests..."
-        npx playwright test
+        echo "Running Playwright e2e tests against production..."
+        PLAYWRIGHT_BASE_URL="$SITE_URL" npx playwright test
     fi
-fi
+}
+
+##
+## Deployment
+##
+
+_pre_deploy
 
 if [ "$SKIP_RSYNC" = true ]; then
     echo "Skipping deploy, CloudFront invalidation, and post-deploy tests (--no-rsync)"
@@ -161,7 +207,6 @@ elif [ "$S3_MODE" = true ]; then
         $S3_SYNC_OPTS --exclude "albums/*" --include "albums/*.html"
 
     # Deploy album data — two passes to set different Cache-Control headers.
-    # --size-only: photogen preserves timestamps, so size alone is a reliable change signal.
     #
     # Pass 2a: JSON, XML, JPEG covers — must revalidate on every request (content can change
     #   in-place, e.g. cover.jpg or index.enc.json when the encryption key changes).
@@ -184,34 +229,7 @@ elif [ "$S3_MODE" = true ]; then
         --exclude "*" --include "*.webp" \
         --cache-control "max-age=31536000,immutable"
 
-    # Clear cache (skipped in dry-run mode)
-    if [ "$DRY_RUN" = true ]; then
-        echo "DRY RUN: skipping CloudFront invalidation"
-    else
-        aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_ID" --paths "/*" \
-            --query 'Invalidation.Id' --output text
-    fi
-
-    if [ "$SKIP_SERVER_TEST" = true ]; then
-        echo "Skipping post-deploy server tests (--no-server-test)"
-    elif [ "$DRY_RUN" = true ]; then
-        echo "DRY RUN: skipping post-deploy server tests"
-    else
-        echo "Sleeping 5 to allow cache to clear..."
-        sleep 5
-        PROD_ARGS=(--s3 --remote "$SITE_URL")
-        [ -n "$CONFIG_DIR" ] && PROD_ARGS+=(--config-dir "$CONFIG_DIR")
-        "$SDIR/test-photos-server.sh" "${PROD_ARGS[@]}"
-    fi
-
-    if [ "$SKIP_PLAYWRIGHT" = true ]; then
-        echo "Skipping Playwright tests against production (--no-playwright)"
-    elif [ "$DRY_RUN" = true ]; then
-        echo "DRY RUN: skipping Playwright tests against production"
-    else
-        echo "Running Playwright e2e tests against production..."
-        PLAYWRIGHT_BASE_URL="$SITE_URL" npx playwright test
-    fi
+    _post_deploy s3
 else
     RSYNC_OPTS="-avz --checksum --delete"
     RSYNC_OPTS_ALBUMS="-avz --delete"
@@ -241,32 +259,5 @@ else
         "$DDPHOTOS_ALBUMS_DIR/$DDPHOTOS_SITE_ID/" \
         "$AWS_APACHE":"${RSYNC_DEST}albums/"
 
-    # Clear cache (skipped in dry-run mode)
-    if [ "$DRY_RUN" = true ]; then
-        echo "DRY RUN: skipping CloudFront invalidation"
-    else
-        aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_ID" --paths "/*"
-    fi
-
-    if [ "$SKIP_SERVER_TEST" = true ]; then
-        echo "Skipping post-deploy server tests (--no-server-test)"
-    elif [ "$DRY_RUN" = true ]; then
-        echo "DRY RUN: skipping post-deploy server tests"
-    else
-        # Wait, run test
-        echo "Sleeping 5 to allow cache to clear..."
-        sleep 5
-        PROD_ARGS=(--remote "$SITE_URL")
-        [ -n "$CONFIG_DIR" ] && PROD_ARGS+=(--config-dir "$CONFIG_DIR")
-        "$SDIR/test-photos-server.sh" "${PROD_ARGS[@]}"
-    fi
-
-    if [ "$SKIP_PLAYWRIGHT" = true ]; then
-        echo "Skipping Playwright tests against production (--no-playwright)"
-    elif [ "$DRY_RUN" = true ]; then
-        echo "DRY RUN: skipping Playwright tests against production"
-    else
-        echo "Running Playwright e2e tests against production..."
-        PLAYWRIGHT_BASE_URL="$SITE_URL" npx playwright test
-    fi
+    _post_deploy
 fi
