@@ -104,7 +104,10 @@
 	{@render children()}
 	<footer class:ready={!page.data.encryptedBlob || $footerReady}>
 		<div>Copyright © {data.siteConfig?.copyrightYear}-{new Date().getFullYear()}. {data.siteConfig?.copyrightOwner}.</div>
-		<div class="built-with">Built with joy by <a class="footer-link" href="https://github.com/dougdonohoe/ddphotos" target="_blank" rel="noopener">DD Photos</a> on {builtOn} <button class="about-btn" onclick={openAbout} aria-label="About this site"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button></div>
+		<div class="built-with">
+			<button class="about-btn" onclick={openAbout} aria-label="About this site"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button>
+			Built with joy by <a class="footer-link" href="https://github.com/dougdonohoe/ddphotos" target="_blank" rel="noopener">DD Photos</a> on {builtOn}
+		</div>
 	</footer>
 
 	{#if showAbout}
@@ -265,7 +268,7 @@
 		background: none;
 		border: none;
 		padding: 0;
-		margin-left: .5rem;
+		margin-right: .3rem;
 		cursor: pointer;
 		color: #5a8ec0;
 		display: inline-flex;
@@ -291,11 +294,19 @@
 		justify-content: center;
 	}
 
+	:global(:root) .modal-overlay {
+		background: rgba(200, 200, 200, 0.4);
+	}
+
+	:global(:root[data-theme='light']) .modal-overlay {
+		background: rgba(0, 0, 0, 0.6);
+	}
+
 	.modal {
 		background: var(--bg-secondary);
 		border: 1px solid var(--border-color);
 		border-radius: 8px;
-		width: 360px;
+		width: 400px;
 		max-width: calc(100vw - 2rem);
 		box-shadow: 0 8px 32px var(--shadow-color);
 	}
@@ -307,7 +318,7 @@
 		padding: 1rem 1rem 0.75rem;
 		border-bottom: 1px solid var(--border-color);
 		font-weight: 600;
-		font-size: 1.25rem;
+		font-size: 1.4rem;
 		color: var(--text-color);
 	}
 
@@ -316,7 +327,7 @@
 		border: none;
 		cursor: pointer;
 		color: var(--text-muted);
-		font-size: 1rem;
+		font-size: 1.25rem;
 		line-height: 1;
 		padding: 0.15rem 0.3rem;
 		border-radius: 4px;
@@ -333,7 +344,7 @@
 		gap: 0.5rem 1.25rem;
 		padding: 1rem;
 		margin: 0;
-		font-size: 0.875rem;
+		font-size: 1.15rem;
 	}
 
 	.modal-body dt {
