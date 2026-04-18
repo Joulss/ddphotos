@@ -362,6 +362,10 @@
 			height: 140px;
 		}
 
+		.hero-overlay {
+			padding-bottom: 1.25rem;
+		}
+
 		.hero-overlay h1 {
 			font-size: 1.7rem;
 		}
