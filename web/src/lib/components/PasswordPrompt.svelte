@@ -7,6 +7,8 @@
 		shakeCount?: number;
 	}
 
+	import Lock from 'lucide-svelte/icons/lock';
+
 	let { prefix, name, hint, onunlock, shakeCount = 0 }: Props = $props();
 	let password = $state('');
 	let shaking = $state(false);
@@ -34,21 +36,7 @@
 <div class="overlay">
 	<div class="card" class:shake={shaking}>
 		<div class="lock-icon">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.75"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				width="40"
-				height="40"
-				aria-hidden="true"
-			>
-				<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-				<path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-			</svg>
+			<Lock size={40} strokeWidth={1.75} aria-hidden="true" />
 		</div>
 		<h2>{prefix ? prefix + ' ' : ''}<span class="name">{name}</span><br>requires a password.</h2>
 		<form onsubmit={handleSubmit}>

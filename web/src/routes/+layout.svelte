@@ -3,6 +3,8 @@
 	import { onMount } from 'svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { footerReady } from '$lib/stores';
+	import LogOut from 'lucide-svelte/icons/log-out';
+	import Info from 'lucide-svelte/icons/info';
 	import { page } from '$app/state';
 
 	let { children, data } = $props();
@@ -81,22 +83,7 @@
 	>
 		{#if hasEncryption}
 			<button class="control-btn" onclick={logout} aria-label="Log out">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					width="16"
-					height="16"
-					aria-hidden="true"
-				>
-					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-					<polyline points="16 17 21 12 16 7"></polyline>
-					<line x1="21" y1="12" x2="9" y2="12"></line>
-				</svg>
+				<LogOut size={16} aria-hidden="true" />
 			</button>
 		{/if}
 		<ThemeToggle />
@@ -105,7 +92,7 @@
 	<footer class:ready={!page.data.encryptedBlob || $footerReady}>
 		<div>Copyright © {data.siteConfig?.copyrightYear}-{new Date().getFullYear()}. {data.siteConfig?.copyrightOwner}.</div>
 		<div class="built-with">
-			<button class="about-btn" onclick={openAbout} aria-label="About this site"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button>
+			<button class="about-btn" onclick={openAbout} aria-label="About this site"><Info size={16} aria-hidden="true" /></button>
 			Built with joy by <a class="footer-link" href="https://github.com/dougdonohoe/ddphotos" target="_blank" rel="noopener">DD Photos</a> on {builtOn}
 		</div>
 	</footer>
