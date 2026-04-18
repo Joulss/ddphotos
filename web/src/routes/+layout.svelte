@@ -5,6 +5,7 @@
 	import { footerReady } from '$lib/stores';
 	import LogOut from 'lucide-svelte/icons/log-out';
 	import Info from 'lucide-svelte/icons/info';
+	import X from 'lucide-svelte/icons/x';
 	import { page } from '$app/state';
 
 	let { children, data } = $props();
@@ -102,7 +103,7 @@
 			<div class="modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
 				<div class="modal-header">
 					<span id="about-title">About this site</span>
-					<button class="modal-close" onclick={closeAbout} aria-label="Close">&#x2715;</button>
+					<button class="modal-close" onclick={closeAbout} aria-label="Close"><X size={20} aria-hidden="true" /></button>
 				</div>
 				<dl class="modal-body">
 					<dt>Built</dt>
