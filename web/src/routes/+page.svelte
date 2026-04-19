@@ -385,7 +385,7 @@
 		}
 
 		.hero-overlay {
-			padding-bottom: 1.25rem;
+			padding-bottom: 1.0rem;
 		}
 
 		.hero-overlay h1 {
