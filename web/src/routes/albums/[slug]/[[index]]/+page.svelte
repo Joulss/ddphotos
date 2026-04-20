@@ -730,7 +730,7 @@
 	   to pointer modality and suppresses the default :focus-visible outline even when focus
 	   is set programmatically. */
 	.photo:focus {
-		outline: 2px solid var(--focus-color, Highlight);
+		outline: 2px solid var(--focus-color, #0066cc);
 		outline-offset: 2px;
 	}
 
