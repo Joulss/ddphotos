@@ -142,7 +142,7 @@ export default defineConfig({
 
 				// Serve DDPHOTOS_ALBUMS_DIR/DDPHOTOS_SITE_ID at /albums/** during dev.
 				server.middlewares.use('/albums', (req, res, next) => {
-					const filePath = join(albumsDir, req.url ?? '/');
+					const filePath = join(albumsDir, decodeURIComponent(req.url ?? '/'));
 					let stat;
 					try { stat = statSync(filePath); } catch { return next(); }
 					if (!stat.isFile()) return next();
