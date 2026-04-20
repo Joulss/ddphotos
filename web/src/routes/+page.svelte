@@ -454,7 +454,7 @@
 	main {
 		max-width: 1200px;
 		margin: 0 auto;
-		padding: 1.5rem 2rem 2rem;
+		padding: 1.5rem 2rem 1.33rem;
 	}
 
 	.loading-page {

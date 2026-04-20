@@ -229,7 +229,7 @@
 
 	footer {
 		text-align: center;
-		padding: 1rem 1rem 1.5rem;
+		padding: 1rem 1rem 4.5rem;
 		color: var(--text-muted);
 		font-size: 0.85rem;
 		opacity: 0;
