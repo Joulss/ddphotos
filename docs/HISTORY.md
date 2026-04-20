@@ -1004,19 +1004,19 @@ Password-protected albums failed when accessing the dev server via LAN IP (e.g. 
 
 **Root cause**: The Web Crypto API (`crypto.subtle`) requires a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts). `localhost` qualifies, but LAN IPs over plain HTTP do not. `crypto.subtle` is `undefined` in that context, causing decryption to fail silently.
 
-**Solution**: Added a `DEV_HTTPS=1` environment variable that gates loading `@vitejs/plugin-basic-ssl`, which generates a self-signed certificate for the Vite dev server.
+**Solution**: Added a `VITE_HTTPS=1` environment variable that gates loading `@vitejs/plugin-basic-ssl`, which generates a self-signed certificate for the Vite dev server.
 
 `web/vite.config.ts` uses a top-level `await` (valid in ES module Vite configs) to conditionally import the plugin:
 
 ```ts
-const httpsPlugin = process.env.DEV_HTTPS
+const httpsPlugin = process.env.VITE_HTTPS
     ? [(await import('@vitejs/plugin-basic-ssl')).default()]
     : [];
 
 export default defineConfig({
     server: {
         host: true,
-        https: !!process.env.DEV_HTTPS
+        https: !!process.env.VITE_HTTPS
     },
     plugins: [...httpsPlugin, sveltekit(), ...]
 });
@@ -1026,10 +1026,10 @@ A dedicated `web-npm-run-dev-https` Makefile recipe was added (without `--open`,
 
 ```makefile
 web-npm-run-dev-https:
-    $(NODE_INIT) cd web && DEV_HTTPS=1 SITE_ENV=$(SITE_ENV) ... npm run dev
+    $(NODE_INIT) cd web && VITE_HTTPS=1 SITE_ENV=$(SITE_ENV) ... npm run dev
 ```
 
-`README-DEV.md` documents the feature under the "LAN Access" subsection: the secure context requirement, how to start HTTPS mode (`DEV_HTTPS=1 make web-npm-run-dev-https`), and the browser self-signed cert warning users must accept.
+`README-DEV.md` documents the feature under the "LAN Access" subsection: the secure context requirement, how to start HTTPS mode (`VITE_HTTPS=1 make web-npm-run-dev-https`), and the browser self-signed cert warning users must accept.
 
 ### 55. Configurable Default Theme and `?clear` Improvement
 

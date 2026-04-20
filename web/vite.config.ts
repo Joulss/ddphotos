@@ -96,10 +96,10 @@ const remote = gitRemote();
 process.env.VITE_GIT_REPO_SLUG = remote.slug;
 process.env.VITE_GIT_REPO_URL = remote.url;
 
-// When DEV_HTTPS=1, load @vitejs/plugin-basic-ssl to serve the dev server over HTTPS.
+// When VITE_HTTPS=1, load @vitejs/plugin-basic-ssl to serve the dev server over HTTPS.
 // This is needed for mobile testing via LAN IP (crypto.subtle requires a secure context).
 // Normal dev runs are unaffected.
-const httpsPlugin = process.env.DEV_HTTPS
+const httpsPlugin = process.env.VITE_HTTPS
 	? [(await import('@vitejs/plugin-basic-ssl')).default()]
 	: [];
 

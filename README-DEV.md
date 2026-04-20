@@ -65,10 +65,10 @@ Password-protected albums use the [Web Crypto API](https://developer.mozilla.org
 `localhost` qualifies, but a LAN IP address (e.g. `192.168.x.x`) over plain HTTP does not —
 the password prompt will appear but decryption will silently fail.
 
-To serve the dev server over HTTPS, set `DEV_HTTPS=1`:
+To serve the dev server over HTTPS, set `VITE_HTTPS=1`:
 
 ```bash
-DEV_HTTPS=1 make web-npm-run-dev        # or your own site-specific recipe
+VITE_HTTPS=1 make web-npm-run-dev        # or your own site-specific recipe
 ```
 
 This loads `@vitejs/plugin-basic-ssl`, which generates a self-signed certificate automatically.

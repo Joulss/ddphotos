@@ -100,7 +100,7 @@ web-npm-run-dev:
 .PHONY: web-npm-run-dev-https
 ## web-npm-run-dev-https: run npm dev server over HTTPS (for mobile testing via LAN IP — crypto.subtle requires a secure context)
 web-npm-run-dev-https:
-	$(NODE_INIT) cd web && DEV_HTTPS=1 SITE_ENV=$(SITE_ENV) DDPHOTOS_ALBUMS_DIR=$(DDPHOTOS_ALBUMS_DIR) DDPHOTOS_SITE_ID=$(DDPHOTOS_SITE_ID) npm run dev
+	$(NODE_INIT) cd web && VITE_HTTPS=1 SITE_ENV=$(SITE_ENV) DDPHOTOS_ALBUMS_DIR=$(DDPHOTOS_ALBUMS_DIR) DDPHOTOS_SITE_ID=$(DDPHOTOS_SITE_ID) npm run dev
 
 .PHONY: web-npm-build
 ## web-npm-build: build web app
