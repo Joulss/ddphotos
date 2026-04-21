@@ -186,9 +186,6 @@ func TestPhotoWebPName_WithoutKey(t *testing.T) {
 
 	ec := &EncryptConfig{}
 	assert.Equal(t, "IMG_3961.webp", ec.PhotoWebPName("IMG_3961.jpg"))
-
-	var nilEc *EncryptConfig
-	assert.Equal(t, "photo.webp", nilEc.PhotoWebPName("photo.jpg"))
 }
 
 func TestPhotoWebPName_DifferentKeys(t *testing.T) {

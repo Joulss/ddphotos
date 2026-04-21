@@ -157,7 +157,7 @@ func (ec *EncryptConfig) IsSiteEncrypted() bool {
 // HMAC-SHA256 so that original filenames (e.g. IMG_3961.jpg) cannot be guessed.
 // If HMACKey is empty, falls back to the standard WebP filename.
 func (ec *EncryptConfig) PhotoWebPName(filename string) string {
-	if ec == nil || ec.HMACKey == "" {
+	if ec.HMACKey == "" {
 		return WebPFileName(filename)
 	}
 	mac := hmac.New(sha256.New, []byte(ec.HMACKey))
