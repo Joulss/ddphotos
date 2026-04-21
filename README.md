@@ -203,7 +203,7 @@ There are three configuration files one needs to build a site:
 * `descriptions.txt` - The description of the album that you see. This
   is in a separate file to allow sharing of albums across sites (useful in development), 
   and also enables localization in the future.
-* `site.env` - Global values like site name, description and copyright info.
+* `site.env` - Global values for deployment and testing.
 
 The `config` directory contains examples of each, and serves as detailed
 documentation of each parameter.  The `sample/config` files are a working 
