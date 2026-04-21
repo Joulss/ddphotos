@@ -221,6 +221,13 @@
 		return true;
 	}
 
+	function handleCardKeydown(e: KeyboardEvent) {
+		if (e.key === ' ') {
+			e.preventDefault();
+			(e.currentTarget as HTMLElement).click();
+		}
+	}
+
 	async function handleUnlock(password: string) {
 		if (!albumsEncrypted) return;
 		if (await applyDecrypted(password)) {
@@ -261,7 +268,7 @@
 		<div class="albums">
 			{#each albums as album (album.slug)}
 				<a href={resolve(`/albums/${album.slug}`)} class="album-card"
-					onkeydown={(e) => { if (e.key === ' ') { e.preventDefault(); e.currentTarget.click(); } }}
+					onkeydown={handleCardKeydown}
 				>
 					{#if album.cover}
 						<img src="/albums/{album.cover}" alt={album.title} />
