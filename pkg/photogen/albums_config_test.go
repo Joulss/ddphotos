@@ -270,6 +270,144 @@ albums:
 	})
 }
 
+func TestToAlbumConfigs_Hero(t *testing.T) {
+	t.Parallel()
+
+	t.Run("absolute base", func(t *testing.T) {
+		configDir := t.TempDir()
+		photoBase := t.TempDir()
+		heroFile := filepath.Join(photoBase, "hero.jpg")
+		require.NoError(t, os.WriteFile(heroFile, []byte("img"), 0o644))
+
+		af := parseYAML(t, configDir, fmt.Sprintf(`
+settings:
+  hero:
+    image: hero.jpg
+    base: photos
+bases:
+  photos: %s
+albums: []
+`, photoBase))
+
+		_, err := af.ToAlbumConfigs(configDir)
+		require.NoError(t, err)
+		assert.Equal(t, heroFile, af.Settings.HeroImagePath)
+	})
+
+	t.Run("relative base resolves to CWD", func(t *testing.T) {
+		configDir := t.TempDir()
+		cwd, err := os.Getwd()
+		require.NoError(t, err)
+		relBase := "testdata/hero-base"
+		absBase := filepath.Join(cwd, relBase)
+		heroFile := filepath.Join(absBase, "hero.jpg")
+		require.NoError(t, os.MkdirAll(absBase, 0o755))
+		require.NoError(t, os.WriteFile(heroFile, []byte("img"), 0o644))
+		t.Cleanup(func() { os.RemoveAll(absBase) })
+
+		af := parseYAML(t, configDir, fmt.Sprintf(`
+settings:
+  hero:
+    image: hero.jpg
+    base: photos
+bases:
+  photos: %s
+albums: []
+`, relBase))
+
+		_, err = af.ToAlbumConfigs(configDir)
+		require.NoError(t, err)
+		assert.Equal(t, heroFile, af.Settings.HeroImagePath)
+	})
+
+	t.Run("relative image without base resolves to configDir", func(t *testing.T) {
+		configDir := t.TempDir()
+		heroFile := filepath.Join(configDir, "hero.jpg")
+		require.NoError(t, os.WriteFile(heroFile, []byte("img"), 0o644))
+
+		af := parseYAML(t, configDir, `
+settings:
+  hero:
+    image: hero.jpg
+albums: []
+`)
+
+		_, err := af.ToAlbumConfigs(configDir)
+		require.NoError(t, err)
+		assert.Equal(t, heroFile, af.Settings.HeroImagePath)
+	})
+
+	t.Run("absolute image without base", func(t *testing.T) {
+		configDir := t.TempDir()
+		heroFile := filepath.Join(t.TempDir(), "hero.jpg")
+		require.NoError(t, os.WriteFile(heroFile, []byte("img"), 0o644))
+
+		af := parseYAML(t, configDir, fmt.Sprintf(`
+settings:
+  hero:
+    image: %s
+albums: []
+`, heroFile))
+
+		_, err := af.ToAlbumConfigs(configDir)
+		require.NoError(t, err)
+		assert.Equal(t, heroFile, af.Settings.HeroImagePath)
+	})
+
+	t.Run("hero image does not exist", func(t *testing.T) {
+		configDir := t.TempDir()
+		af := parseYAML(t, configDir, `
+settings:
+  hero:
+    image: /nonexistent/hero.jpg
+albums: []
+`)
+		_, err := af.ToAlbumConfigs(configDir)
+		require.ErrorContains(t, err, "does not exist")
+	})
+}
+
+func TestToAlbumConfigs_CSS(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid css file", func(t *testing.T) {
+		configDir := t.TempDir()
+		cssFile := filepath.Join(configDir, "custom.css")
+		require.NoError(t, os.WriteFile(cssFile, []byte("body{}"), 0o644))
+		photoDir := t.TempDir()
+
+		af := parseYAML(t, configDir, fmt.Sprintf(`
+settings:
+  css: custom.css
+albums:
+  - slug: a
+    name: A
+    source: %s
+`, photoDir))
+
+		_, err := af.ToAlbumConfigs(configDir)
+		require.NoError(t, err)
+		assert.Equal(t, cssFile, af.Settings.CustomCSSPath)
+	})
+
+	t.Run("css file does not exist", func(t *testing.T) {
+		configDir := t.TempDir()
+		photoDir := t.TempDir()
+
+		af := parseYAML(t, configDir, fmt.Sprintf(`
+settings:
+  css: nonexistent.css
+albums:
+  - slug: a
+    name: A
+    source: %s
+`, photoDir))
+
+		_, err := af.ToAlbumConfigs(configDir)
+		require.ErrorContains(t, err, "does not exist")
+	})
+}
+
 func TestLoadAlbumConfigs(t *testing.T) {
 	t.Parallel()
 

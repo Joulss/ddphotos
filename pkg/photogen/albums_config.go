@@ -158,54 +158,40 @@ func (af *AlbumsFile) ToAlbumConfigs(configDir string) ([]*AlbumConfig, error) {
 	return configs, nil
 }
 
-// resolvePath returns the absolute source path for an album entry, verifying it exists.
-// If base is set, source is joined to the named base path; relative base paths are
-// resolved relative to the working directory (so they work when photogen is run from
-// the repo root). If no base is set, a relative source is resolved relative to configDir
-// (so a config-adjacent source directory works without an absolute path).
-func (af *AlbumsFile) resolvePath(configDir string, a AlbumEntry) (string, error) {
-	src := a.Source
-	if a.Base != "" {
-		base := af.Bases[a.Base]
-		if !filepath.IsAbs(base) {
+// resolveFSPath resolves a base+relPath combination to an absolute path and verifies
+// it exists on disk. If base is non-empty it is looked up in af.Bases; relative base
+// paths are anchored to the working directory. If base is empty and relPath is relative,
+// it is anchored to configDir. errContext is prepended to any returned error.
+func (af *AlbumsFile) resolveFSPath(configDir, base, relPath, errContext string) (string, error) {
+	resolved := relPath
+	if base != "" {
+		basePath := af.Bases[base]
+		if !filepath.IsAbs(basePath) {
 			cwd, err := os.Getwd()
 			if err != nil {
-				return "", fmt.Errorf("album %q: get working directory: %w", a.Slug, err)
+				return "", fmt.Errorf("%s: get working directory: %w", errContext, err)
 			}
-			base = filepath.Join(cwd, base)
+			basePath = filepath.Join(cwd, basePath)
 		}
-		src = filepath.Join(base, a.Source)
-	} else if !filepath.IsAbs(src) {
-		src = filepath.Join(configDir, src)
+		resolved = filepath.Join(basePath, relPath)
+	} else if !filepath.IsAbs(resolved) {
+		resolved = filepath.Join(configDir, resolved)
 	}
-	if _, err := os.Stat(src); err != nil {
-		return "", fmt.Errorf("album %q: source path %q does not exist", a.Slug, src)
+	if _, err := os.Stat(resolved); err != nil {
+		return "", fmt.Errorf("%s: path %q does not exist", errContext, resolved)
 	}
-	return src, nil
+	return resolved, nil
+}
+
+// resolvePath returns the absolute source path for an album entry, verifying it exists.
+func (af *AlbumsFile) resolvePath(configDir string, a AlbumEntry) (string, error) {
+	return af.resolveFSPath(configDir, a.Base, a.Source, fmt.Sprintf("album %q", a.Slug))
 }
 
 // resolveHeroPath returns the absolute path for the hero image, verifying it exists.
-// Uses the same base/source resolution logic as resolvePath for album entries.
 func (af *AlbumsFile) resolveHeroPath(configDir string) (string, error) {
 	h := af.Settings.Hero
-	imgPath := h.Image
-	if h.Base != "" {
-		base := af.Bases[h.Base]
-		if !filepath.IsAbs(base) {
-			cwd, err := os.Getwd()
-			if err != nil {
-				return "", fmt.Errorf("hero: get working directory: %w", err)
-			}
-			base = filepath.Join(cwd, base)
-		}
-		imgPath = filepath.Join(base, imgPath)
-	} else if !filepath.IsAbs(imgPath) {
-		imgPath = filepath.Join(configDir, imgPath)
-	}
-	if _, err := os.Stat(imgPath); err != nil {
-		return "", fmt.Errorf("hero: image path %q does not exist", imgPath)
-	}
-	return imgPath, nil
+	return af.resolveFSPath(configDir, h.Base, h.Image, "hero")
 }
 
 // LoadAlbumDescriptions reads a descriptions file and returns a slug→description map.
