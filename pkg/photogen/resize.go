@@ -35,11 +35,11 @@ type ResizeResult struct {
 	Message string // human-readable status message
 }
 
-// prepareImage handles the common skip/dryrun/load/rotate/resize/mkdir logic shared by
-// all resize operations. Returns (img, nil, nil) when the image is ready to export,
-// (nil, result, nil) when short-circuited (skip or dry run), or (nil, nil, err) on error.
+// openImage handles the skip/dryrun/load/rotate steps common to all resize operations.
+// Returns (img, nil, nil) when the image is loaded and ready, (nil, result, nil) when
+// short-circuited (skip or dry run), or (nil, nil, err) on error.
 // The caller is responsible for calling img.Close() when a non-nil image is returned.
-func prepareImage(inputPath, outputPath string, maxDim int, dryRunLabel string, force, dryRun bool) (*vips.ImageRef, *ResizeResult, error) {
+func openImage(inputPath, outputPath, dryRunLabel string, force, dryRun bool) (*vips.ImageRef, *ResizeResult, error) {
 	if !force {
 		if _, err := os.Stat(outputPath); err == nil {
 			return nil, &ResizeResult{Skipped: true, Message: fmt.Sprintf("exists: %s", outputPath)}, nil
@@ -60,6 +60,19 @@ func prepareImage(inputPath, outputPath string, maxDim int, dryRunLabel string, 
 	if err := img.AutoRotate(); err != nil {
 		img.Close()
 		return nil, nil, fmt.Errorf("auto-rotate: %w", err)
+	}
+
+	return img, nil, nil
+}
+
+// prepareImage extends openImage with scale-down-to-fit and mkdir, ready for export.
+// Returns (img, nil, nil) when the image is ready to export,
+// (nil, result, nil) when short-circuited (skip or dry run), or (nil, nil, err) on error.
+// The caller is responsible for calling img.Close() when a non-nil image is returned.
+func prepareImage(inputPath, outputPath string, maxDim int, dryRunLabel string, force, dryRun bool) (*vips.ImageRef, *ResizeResult, error) {
+	img, result, err := openImage(inputPath, outputPath, dryRunLabel, force, dryRun)
+	if err != nil || result != nil {
+		return nil, result, err
 	}
 
 	var scale float64
@@ -168,26 +181,11 @@ const heroHeight = 250
 // "top" keeps the top, "bottom" keeps the bottom, anything else (including "") centers.
 // Horizontally the crop is always centered.
 func ResizeHeroJPEG(inputPath, outputPath, crop string, force, dryRun bool) (*ResizeResult, error) {
-	if !force {
-		if _, err := os.Stat(outputPath); err == nil {
-			return &ResizeResult{Skipped: true, Message: fmt.Sprintf("exists: %s", outputPath)}, nil
-		}
-	}
-	if dryRun {
-		return &ResizeResult{DryRun: true, Message: fmt.Sprintf("DRYRUN: would write %s (hero jpeg)", outputPath)}, nil
-	}
-
-	params := vips.NewImportParams()
-	params.FailOnError.Set(false)
-	img, err := vips.LoadImageFromFile(inputPath, params)
-	if err != nil {
-		return nil, fmt.Errorf("load image %s: %w", inputPath, err)
+	img, result, err := openImage(inputPath, outputPath, "hero jpeg", force, dryRun)
+	if err != nil || result != nil {
+		return result, err
 	}
 	defer img.Close()
-
-	if err := img.AutoRotate(); err != nil {
-		return nil, fmt.Errorf("auto-rotate: %w", err)
-	}
 
 	// Scale so the image covers the target dimensions (both width >= heroWidth and height >= heroHeight).
 	wScale := float64(heroWidth) / float64(img.Width())
@@ -241,7 +239,7 @@ func ResizeHeroJPEG(inputPath, outputPath, crop string, force, dryRun bool) (*Re
 
 	return &ResizeResult{
 		Written: true,
-		Message: fmt.Sprintf("wrote: %s (hero jpeg, %dx%d)", outputPath, heroWidth, heroHeight),
+		Message: fmt.Sprintf("  wrote: %s (hero jpeg, %dx%d)", outputPath, heroWidth, heroHeight),
 	}, nil
 }
 

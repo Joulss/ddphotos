@@ -169,3 +169,177 @@ func TestGetSizeConfig(t *testing.T) {
 		})
 	}
 }
+
+// --- ResizeCoverJPEG tests ---
+
+func TestResizeCoverJPEG_Landscape(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "cover.jpg")
+
+	result, err := ResizeCoverJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, false, false)
+	require.NoError(t, err)
+	assert.True(t, result.Written)
+	assert.False(t, result.Skipped)
+	assert.False(t, result.DryRun)
+
+	info, err := os.Stat(outputPath)
+	require.NoError(t, err)
+	assert.Greater(t, info.Size(), int64(0))
+
+	meta, err := ReadPhotoMetadata(outputPath)
+	require.NoError(t, err)
+	assert.LessOrEqual(t, meta.Width, coverJPEGMaxDimension)
+	assert.LessOrEqual(t, meta.Height, coverJPEGMaxDimension)
+	t.Logf("cover landscape: %dx%d", meta.Width, meta.Height)
+}
+
+func TestResizeCoverJPEG_Portrait(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "cover-portrait.jpg")
+
+	result, err := ResizeCoverJPEG(filepath.Join("testdata", "portrait-1.jpg"), outputPath, false, false)
+	require.NoError(t, err)
+	assert.True(t, result.Written)
+
+	meta, err := ReadPhotoMetadata(outputPath)
+	require.NoError(t, err)
+	assert.LessOrEqual(t, meta.Width, coverJPEGMaxDimension)
+	assert.LessOrEqual(t, meta.Height, coverJPEGMaxDimension)
+	t.Logf("cover portrait: %dx%d", meta.Width, meta.Height)
+}
+
+func TestResizeCoverJPEG_SkipExisting(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "cover-skip.jpg")
+
+	result1, err := ResizeCoverJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, false, false)
+	require.NoError(t, err)
+	assert.True(t, result1.Written)
+
+	result2, err := ResizeCoverJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, false, false)
+	require.NoError(t, err)
+	assert.True(t, result2.Skipped)
+	assert.False(t, result2.Written)
+	assert.Contains(t, result2.Message, "exists:")
+}
+
+func TestResizeCoverJPEG_ForceOverwrite(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "cover-force.jpg")
+
+	_, err := ResizeCoverJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, false, false)
+	require.NoError(t, err)
+
+	result, err := ResizeCoverJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, true, false)
+	require.NoError(t, err)
+	assert.True(t, result.Written)
+	assert.False(t, result.Skipped)
+}
+
+func TestResizeCoverJPEG_DryRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "cover-dryrun.jpg")
+
+	result, err := ResizeCoverJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, false, true)
+	require.NoError(t, err)
+	assert.True(t, result.DryRun)
+	assert.False(t, result.Written)
+	assert.Contains(t, result.Message, "DRYRUN")
+
+	_, err = os.Stat(outputPath)
+	assert.True(t, os.IsNotExist(err))
+}
+
+func TestResizeCoverJPEG_InputNotFound(t *testing.T) {
+	tmpDir := t.TempDir()
+	_, err := ResizeCoverJPEG("/nonexistent/image.jpg", filepath.Join(tmpDir, "out.jpg"), false, false)
+	assert.Error(t, err)
+}
+
+// --- ResizeHeroJPEG tests ---
+
+func TestResizeHeroJPEG_Write(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "hero.jpg")
+
+	result, err := ResizeHeroJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, "center", false, false)
+	require.NoError(t, err)
+	assert.True(t, result.Written)
+	assert.False(t, result.Skipped)
+	assert.False(t, result.DryRun)
+
+	info, err := os.Stat(outputPath)
+	require.NoError(t, err)
+	assert.Greater(t, info.Size(), int64(0))
+
+	meta, err := ReadPhotoMetadata(outputPath)
+	require.NoError(t, err)
+	assert.Equal(t, heroWidth, meta.Width)
+	assert.Equal(t, heroHeight, meta.Height)
+	t.Logf("hero: %dx%d", meta.Width, meta.Height)
+}
+
+func TestResizeHeroJPEG_CropVariants(t *testing.T) {
+	for _, crop := range []string{"top", "bottom", "center", ""} {
+		t.Run("crop="+crop, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			outputPath := filepath.Join(tmpDir, "hero.jpg")
+
+			result, err := ResizeHeroJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, crop, false, false)
+			require.NoError(t, err)
+			assert.True(t, result.Written)
+
+			meta, err := ReadPhotoMetadata(outputPath)
+			require.NoError(t, err)
+			assert.Equal(t, heroWidth, meta.Width)
+			assert.Equal(t, heroHeight, meta.Height)
+		})
+	}
+}
+
+func TestResizeHeroJPEG_SkipExisting(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "hero-skip.jpg")
+
+	_, err := ResizeHeroJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, "center", false, false)
+	require.NoError(t, err)
+
+	result, err := ResizeHeroJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, "center", false, false)
+	require.NoError(t, err)
+	assert.True(t, result.Skipped)
+	assert.False(t, result.Written)
+	assert.Contains(t, result.Message, "exists:")
+}
+
+func TestResizeHeroJPEG_ForceOverwrite(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "hero-force.jpg")
+
+	_, err := ResizeHeroJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, "center", false, false)
+	require.NoError(t, err)
+
+	result, err := ResizeHeroJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, "center", true, false)
+	require.NoError(t, err)
+	assert.True(t, result.Written)
+	assert.False(t, result.Skipped)
+}
+
+func TestResizeHeroJPEG_DryRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "hero-dryrun.jpg")
+
+	result, err := ResizeHeroJPEG(filepath.Join("testdata", "landscape-1.jpg"), outputPath, "center", false, true)
+	require.NoError(t, err)
+	assert.True(t, result.DryRun)
+	assert.False(t, result.Written)
+	assert.Contains(t, result.Message, "DRYRUN")
+
+	_, err = os.Stat(outputPath)
+	assert.True(t, os.IsNotExist(err))
+}
+
+func TestResizeHeroJPEG_InputNotFound(t *testing.T) {
+	tmpDir := t.TempDir()
+	_, err := ResizeHeroJPEG("/nonexistent/image.jpg", filepath.Join(tmpDir, "hero.jpg"), "center", false, false)
+	assert.Error(t, err)
+}
