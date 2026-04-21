@@ -173,7 +173,8 @@
 			disableScrollHandling();
 			document.documentElement.style.visibility = 'hidden';
 			// Failsafe: if $effect never fires (e.g. albums stays null due to error), unhide.
-			setTimeout(() => { document.documentElement.style.visibility = ''; }, 2000);
+			const UNHIDE_TIMEOUT_MS = 2000;
+			setTimeout(() => { document.documentElement.style.visibility = ''; }, UNHIDE_TIMEOUT_MS);
 		}
 
 		// Clear stale cover cache if the siteId or keyId changed (key rotation renames all image files).

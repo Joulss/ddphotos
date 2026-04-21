@@ -12,7 +12,8 @@
 	import BackToTop from '$lib/components/BackToTop.svelte';
 	import OpenGraph from '$lib/components/OpenGraph.svelte';
 	import PasswordPrompt from '$lib/components/PasswordPrompt.svelte';
-	import type { AlbumIndex } from '$lib/types';
+	import type { AlbumIndex, Photo } from '$lib/types';
+	import type { ItemHolder } from 'photoswipe';
 	import {
 		siteKey,
 		albumKey,
@@ -326,23 +327,23 @@
 		// Inject a caption into each of PhotoSwipe's 3-slide holder elements (prev,
 		// current, next) so captions swipe with their photo rather than staying fixed.
 		// Uses pswp.mainScroll.itemHolders (PhotoSwipe v5 internal API).
-		const holders = (pswp as any).mainScroll?.itemHolders as any[] | undefined;
+		const holders: ItemHolder[] = pswp.mainScroll.itemHolders;
 		if (holders) {
 			// Inject one caption element into each holder's DOM element up front.
-			holders.forEach((holder: any) => {
+			holders.forEach((holder: ItemHolder) => {
 				const el = document.createElement('div');
 				el.className = 'pswp-caption';
 				el.style.display = 'none';
-				holder.el?.appendChild(el);
+				holder.el.appendChild(el);
 			});
 
 			const updateAll = () => {
-				holders.forEach((holder: any) => {
+				holders.forEach((holder: ItemHolder) => {
 					// Query the caption from holder.el directly rather than using a
 					// parallel captionEls[] array. PhotoSwipe rotates the itemHolders
 					// array as you navigate, so array index no longer matches the DOM
 					// element after the first swipe — querying by element avoids that.
-					const el = holder.el?.querySelector('.pswp-caption') as HTMLElement | null;
+					const el = holder.el.querySelector('.pswp-caption') as HTMLElement | null;
 					if (!el) return;
 					const idx = holder.slide?.index;
 					const item =
@@ -365,20 +366,20 @@
 			// On zoom-out, delay the fade-in so it waits for the animation to settle.
 			let captionFadeTimer: ReturnType<typeof setTimeout> | null = null;
 			const setCaptionOpacity = (opacity: string) => {
-				holders.forEach((holder: any) => {
-					const el = holder.el?.querySelector('.pswp-caption') as HTMLElement | null;
+				holders.forEach((holder: ItemHolder) => {
+					const el = holder.el.querySelector('.pswp-caption') as HTMLElement | null;
 					if (el && el.style.display !== 'none') el.style.opacity = opacity;
 				});
 			};
 			// beforeZoomTo fires at the start of any zoom animation — fade out immediately
-			pswp.on('beforeZoomTo' as any, () => {
+			pswp.on('beforeZoomTo', () => {
 				if (captionFadeTimer) { clearTimeout(captionFadeTimer); captionFadeTimer = null; }
 				setCaptionOpacity('0');
 			});
 			// zoomPanUpdate fires during pinch and after tap-zoom settles
 			pswp.on('zoomPanUpdate', () => {
-				const slide = (pswp as any).currSlide;
-				const isZoomed = slide?.currZoomLevel > slide?.zoomLevels?.initial * 1.01;
+				const slide = pswp.currSlide;
+				const isZoomed = slide !== undefined && slide.currZoomLevel > slide.zoomLevels.initial * 1.01;
 				if (isZoomed) {
 					// Covers pinch-to-zoom (beforeZoomTo doesn't fire for pinch)
 					if (captionFadeTimer) { clearTimeout(captionFadeTimer); captionFadeTimer = null; }
@@ -437,7 +438,7 @@
 			// a visual delay. loading="lazy" is also disabled in slow mode
 			// to avoid unpredictable interaction with programmatic src assignment.
 			imageSrcs = photos.map(() => '');
-			const timeouts = photos.map((photo: any, i: number) => {
+			const timeouts = photos.map((photo: Photo, i: number) => {
 				const src = `/albums/${slug}/${photo.src.grid}`;
 				const delay = 500 + Math.random() * 2000;
 				return setTimeout(() => {
@@ -452,7 +453,7 @@
 			// inside the effect (which would create a dependency and cause an
 			// infinite update loop when the assignment then triggers a re-run).
 			imageSrcs = photos.map(
-				(photo: any) => `/albums/${slug}/${photo.src.grid}`
+				(photo: Photo) => `/albums/${slug}/${photo.src.grid}`
 			);
 		}
 	});
