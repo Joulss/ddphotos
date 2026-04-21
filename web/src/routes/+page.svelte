@@ -273,6 +273,8 @@
 						     Using background-image (not <img>) avoids any DOM swap flash. -->
 						<div
 							class="album-cover-placeholder"
+							role={albumCovers[album.slug] ? 'img' : undefined}
+							aria-label={albumCovers[album.slug] ? album.title : undefined}
 							style:background-image={albumCovers[album.slug]
 								? `url('${albumCovers[album.slug]}')`
 								: `var(--ddp-cover-${album.slug}, none)`}

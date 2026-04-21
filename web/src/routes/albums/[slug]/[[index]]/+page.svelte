@@ -548,6 +548,7 @@
 				<button
 					class="photo"
 					data-index={i}
+					aria-label={photo.description || photo.fileName}
 					style="
 						position: absolute;
 						left: {box.left}px;
