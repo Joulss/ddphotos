@@ -88,6 +88,20 @@ export function storePassword(key: string, password: string): void {
 	}
 }
 
+// Remove all localStorage keys that start with prefix, plus any extra exact keys.
+export function clearStoredKeys(prefix = 'ddp_', extra: string[] = []): void {
+	try {
+		const keys: string[] = [...extra];
+		for (let i = 0; i < localStorage.length; i++) {
+			const key = localStorage.key(i);
+			if (key?.startsWith(prefix)) keys.push(key);
+		}
+		keys.forEach((k) => localStorage.removeItem(k));
+	} catch {
+		// localStorage not available (e.g. private browsing)
+	}
+}
+
 // localStorage key tracking the siteId of the current build.
 // Used to detect when the user switches between different photogen builds (e.g. during
 // development) so stale cover URLs (which have build-specific HMAC filenames) are cleared.
@@ -124,14 +138,7 @@ export function syncSiteId(siteId: string, keyId?: string): void {
 		const token = keyId ? `${siteId}:${keyId}` : siteId;
 		const stored = localStorage.getItem(SITE_ID_KEY);
 		if (stored === token) return;
-		const toRemove: string[] = [];
-		for (let i = 0; i < localStorage.length; i++) {
-			const k = localStorage.key(i);
-			if (k?.startsWith('ddp_cover_') || k?.startsWith('ddp_album_') || k?.startsWith('ddp_site_')) {
-				toRemove.push(k);
-			}
-		}
-		toRemove.forEach((k) => localStorage.removeItem(k));
+		clearStoredKeys();
 		localStorage.setItem(SITE_ID_KEY, token);
 	} catch {
 		// localStorage not available

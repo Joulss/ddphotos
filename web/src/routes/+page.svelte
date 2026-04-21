@@ -19,6 +19,7 @@
 		getAlbumCover,
 		storePassword,
 		syncSiteId,
+		clearStoredKeys,
 		tryDecrypt,
 		tryStoredAlbumPasswords
 	} from '$lib/crypto';
@@ -178,19 +179,9 @@
 		// Clear stale cover cache if the siteId or keyId changed (key rotation renames all image files).
 		syncSiteId(siteId, data.siteConfig?.keyId);
 
-		// ?clear removes all stored ddp_* passwords and reloads the page without the param.
+		// ?clear removes all stored ddp_* passwords (and theme) then reloads without the param.
 		if (new URLSearchParams(window.location.search).has('clear')) {
-			try {
-				const keys: string[] = [];
-				for (let i = 0; i < localStorage.length; i++) {
-					const key = localStorage.key(i);
-					if (key?.startsWith('ddp_')) keys.push(key);
-				}
-				keys.forEach((k) => localStorage.removeItem(k));
-				localStorage.removeItem('theme');
-			} catch {
-				// localStorage not available (e.g. private browsing)
-			}
+			clearStoredKeys('ddp_', ['theme']);
 			window.location.replace('/');
 			return;
 		}

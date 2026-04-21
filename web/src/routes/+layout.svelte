@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { footerReady } from '$lib/stores';
+	import { clearStoredKeys } from '$lib/crypto';
 	import LogOut from 'lucide-svelte/icons/log-out';
 	import Info from 'lucide-svelte/icons/info';
 	import X from 'lucide-svelte/icons/x';
@@ -51,16 +52,7 @@
 	}
 
 	function logout() {
-		try {
-			const keys: string[] = [];
-			for (let i = 0; i < localStorage.length; i++) {
-				const key = localStorage.key(i);
-				if (key?.startsWith('ddp_')) keys.push(key);
-			}
-			keys.forEach((k) => localStorage.removeItem(k));
-		} catch {
-			// localStorage not available (e.g. private browsing)
-		}
+		clearStoredKeys();
 		window.location.replace('/');
 	}
 </script>
