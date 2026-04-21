@@ -122,20 +122,24 @@
 		}))
 	);
 
+	function cacheAlbumCover(album: AlbumIndex) {
+		const cover = album.cover ?? album.photos[0]?.src.grid;
+		if (cover) storeAlbumCover(siteId, slug, `/albums/${slug}/${cover}`);
+	}
+
 	async function tryDecryptAlbum() {
 		if (!albumEncrypted) return;
 		unlocking = true;
 
 		// Try per-album stored password first, then site-wide.
 		for (const key of [albumKey(siteId, slug), siteKey(siteId)]) {
-			const pw = getStoredPassword(key);
-			if (pw) {
-				const result = await tryDecrypt(encryptedAlbumBlob!, pw);
+			const password = getStoredPassword(key);
+			if (password) {
+				const result = await tryDecrypt(encryptedAlbumBlob!, password);
 				if (result) {
 					decryptedAlbum = result as AlbumIndex;
-					storePassword(albumKey(siteId, slug), pw);
-					const cover = decryptedAlbum.cover ?? decryptedAlbum.photos[0]?.src.grid;
-					if (cover) storeAlbumCover(siteId, slug, `/albums/${slug}/${cover}`);
+					storePassword(albumKey(siteId, slug), password);
+					cacheAlbumCover(decryptedAlbum);
 					unlocking = false;
 					// Wait for Svelte to recompute photoswipeItems from the decrypted album,
 					// then auto-open the lightbox if this is a permalink URL.
@@ -157,8 +161,7 @@
 		if (result) {
 			decryptedAlbum = result as AlbumIndex;
 			storePassword(albumKey(siteId, slug), password);
-			const cover = decryptedAlbum.cover ?? decryptedAlbum.photos[0]?.src.grid;
-			if (cover) storeAlbumCover(siteId, slug, `/albums/${slug}/${cover}`);
+			cacheAlbumCover(decryptedAlbum);
 		} else {
 			shakeCount++;
 		}
