@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-var allowedPhotoExtentions = map[string]struct{}{
+var allowedPhotoExtensions = map[string]struct{}{
 	".jpg":  {},
 	".jpeg": {},
 	".png":  {},
@@ -228,7 +228,7 @@ func (ap *AlbumProcessor) collectPhotosRecursive(dir, relDir string, recurse boo
 			continue
 		}
 		ext := strings.ToLower(filepath.Ext(name))
-		if _, ok := allowedPhotoExtentions[ext]; !ok {
+		if _, ok := allowedPhotoExtensions[ext]; !ok {
 			continue
 		}
 
@@ -385,7 +385,7 @@ func loadPhotoDescriptions(albumPath string) (*photoDescriptions, error) {
 		id := strings.ToLower(parts[0])
 		// Strip image extension if present so "img_001.jpg" and "img_001" both work.
 		if ext := strings.ToLower(filepath.Ext(id)); ext != "" {
-			if _, ok := allowedPhotoExtentions[ext]; ok {
+			if _, ok := allowedPhotoExtensions[ext]; ok {
 				id = strings.TrimSuffix(id, ext)
 			}
 		}
