@@ -244,8 +244,7 @@
 
 {#if !albumsEncrypted || albums}
 	{#if data.siteConfig?.heroImage}
-		<div class="hero">
-			<img src="/albums/{data.siteConfig.heroImage}" alt={siteName} />
+		<div class="hero" style:background-image="url('/albums/{data.siteConfig.heroImage}')">
 			<div class="hero-overlay">
 				<h1>{@html siteTitleHtml}</h1>
 				{#if siteSubtitleHtml}
@@ -335,16 +334,8 @@
 		position: relative;
 		width: 100%;
 		height: 250px;
-		overflow: hidden;
-	}
-
-	.hero img {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		display: block;
+		background-size: cover;
+		background-position: center;
 	}
 
 	.hero-overlay {
