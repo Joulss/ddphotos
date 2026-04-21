@@ -68,27 +68,14 @@ func readDateTaken(path string) time.Time {
 		return time.Time{}
 	}
 
-	// Try DateTimeOriginal first (actual capture time)
-	if tag, err := x.Get(exif.DateTimeOriginal); err == nil {
-		if dt, err := parseExifDateTime(tag.String()); err == nil {
-			return dt
+	for _, field := range []exif.FieldName{
+		exif.DateTimeOriginal, exif.DateTimeDigitized, exif.DateTime} {
+		if tag, err := x.Get(field); err == nil {
+			if dt, err := parseExifDateTime(tag.String()); err == nil {
+				return dt
+			}
 		}
 	}
-
-	// Fall back to DateTimeDigitized
-	if tag, err := x.Get(exif.DateTimeDigitized); err == nil {
-		if dt, err := parseExifDateTime(tag.String()); err == nil {
-			return dt
-		}
-	}
-
-	// Fall back to DateTime (TIFF IFD tag, typically set by image editors)
-	if tag, err := x.Get(exif.DateTime); err == nil {
-		if dt, err := parseExifDateTime(tag.String()); err == nil {
-			return dt
-		}
-	}
-
 	return time.Time{}
 }
 
