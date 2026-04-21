@@ -1,6 +1,7 @@
 package exit
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -41,6 +42,18 @@ func SetExitRequestedWithError(err error) {
 // SetCleanupCallback registers a function to call when a signal is received or a panic is handled.
 func SetCleanupCallback(cb func()) {
 	cleanupCallback = cb
+}
+
+// Fatal prints an error message and exits with a non-zero status.
+// If err is non-nil, it prints "msg: err"; otherwise it prints msg.
+func Fatal(msg string, err error) {
+	if err != nil {
+		fmt.Printf("%s: %s\n", msg, err)
+	} else {
+		fmt.Println(msg)
+		err = errors.New(msg)
+	}
+	ExitWithStatus(err)
 }
 
 // ExitWithStatus exits with status 0 if err is nil and no prior error was recorded, otherwise 1.

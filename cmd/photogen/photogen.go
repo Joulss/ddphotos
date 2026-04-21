@@ -78,8 +78,7 @@ func main() {
 
 	albums, settings, err := photogen.LoadAlbumConfigs(*configDir, *albumsFile)
 	if err != nil {
-		fmt.Printf("Error loading config: %s\n", err)
-		exit.ExitWithStatus(err)
+		exit.Fatal("Error loading config", err)
 	}
 
 	// CLI flags override YAML settings when provided
@@ -142,8 +141,7 @@ func main() {
 	if passwordsPath != "" {
 		ec, err := photogen.LoadEncryptConfig(passwordsPath)
 		if err != nil {
-			fmt.Printf("Error loading encrypt config: %s\n", err)
-			exit.ExitWithStatus(err)
+			exit.Fatal("Error loading encrypt config", err)
 		}
 		cfg.Encrypt = ec
 	}
@@ -174,20 +172,17 @@ func main() {
 
 	// Validate config
 	if err := cfg.Validate(); err != nil {
-		fmt.Printf("Error: %s\n", err)
-		exit.ExitWithStatus(err)
+		exit.Fatal("Error", err)
 	}
 
 	// --hero-only: regenerate hero image and exit, skipping album and index processing.
 	if *heroOnly {
 		if cfg.Hero == nil {
-			fmt.Println("Error: --hero-only requires hero image to be configured in YAML")
-			exit.ExitWithStatus(fmt.Errorf("no hero configured"))
+			exit.Fatal("Error: --hero-only requires hero image to be configured in YAML", nil)
 		}
 		cfg.Force = true
 		if err := cfg.WriteHeroJPEG(); err != nil {
-			fmt.Printf("Error writing hero JPEG: %s\n", err)
-			exit.ExitWithStatus(err)
+			exit.Fatal("Error writing hero JPEG", err)
 		}
 		exit.ExitWithStatus(nil)
 	}
@@ -240,8 +235,7 @@ func main() {
 		album := photogen.NewAlbumProcessor(cfg, albumConfig)
 		err := album.Process(i+1, len(albums))
 		if err != nil {
-			fmt.Printf("Error processing %s: %s\n", albumConfig.Name, err)
-			exit.ExitWithStatus(err)
+			exit.Fatal(fmt.Sprintf("Error processing %s", albumConfig.Name), err)
 		}
 		summaries = append(summaries, album.GetAlbumSummary())
 	}
