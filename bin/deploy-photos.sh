@@ -64,8 +64,6 @@ fi
 
 # These must be set in site.env — guard early so a missing value can't
 # cause rsync --delete to target the wrong (or empty) remote path.
-[ -n "$CLOUDFRONT_ID" ]   || { echo "Error: CLOUDFRONT_ID not set in $SITE_ENV"; exit 1; }
-
 if [ "$S3_MODE" = true ]; then
     [ -n "$S3_BUCKET" ] || { echo "Error: S3_BUCKET not set in $SITE_ENV"; exit 1; }
 else
@@ -98,7 +96,7 @@ SITE_URL=$(python3 -c "import json; print(json.load(open('$CONFIG_JSON'))['siteU
 # Build static site
 cd web
 source "$HOME/.nvm/nvm.sh"
-SITE_ENV="$SITE_ENV" DDPHOTOS_ALBUMS_DIR="$DDPHOTOS_ALBUMS_DIR" DDPHOTOS_SITE_ID="$DDPHOTOS_SITE_ID" npm run build
+DDPHOTOS_ALBUMS_DIR="$DDPHOTOS_ALBUMS_DIR" DDPHOTOS_SITE_ID="$DDPHOTOS_SITE_ID" npm run build
 
 # Docker cleanup (used in tests)
 DOCKER_STARTED=false
@@ -153,9 +151,11 @@ _pre_deploy() {
 _post_deploy() {
     local mode="${1:-}"
 
-    # Clear cache (skipped in dry-run mode)
+    # Clear cache (skipped in dry-run mode or if CLOUDFRONT_ID is not set)
     if [ "$DRY_RUN" = true ]; then
         echo "DRY RUN: skipping CloudFront invalidation"
+    elif [ -z "$CLOUDFRONT_ID" ]; then
+        echo "Skipping CloudFront invalidation (CLOUDFRONT_ID not set in $SITE_ENV)"
     else
         aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_ID" --paths "/*" \
             --query 'Invalidation.Id' --output text

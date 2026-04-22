@@ -104,7 +104,6 @@ fi
 
 ALBUMS_DIR="$(pwd)/albums"
 
-SITE_ENV="$(pwd)/sample/config/site.env"
 DEV_PORT=5174
 DOCKER_PORT=8083
 DOCKER_PORT_NGINX=8084
@@ -164,8 +163,8 @@ wait_for_http() {
 # --- dev mode ---
 run_dev() {
     echo ""
-    echo "=== [dev] Starting Vite dev server on port $DEV_PORT ==="
-    (cd web && SITE_ENV="$SITE_ENV" DDPHOTOS_ALBUMS_DIR="$ALBUMS_DIR" DDPHOTOS_SITE_ID="$SITE_ID" npx vite dev --port "$DEV_PORT" --clearScreen false) &
+    echo "=== [dev] Starting Vite dev server for site '$SITE_ID' on port $DEV_PORT ==="
+    (cd web && DDPHOTOS_ALBUMS_DIR="$ALBUMS_DIR" DDPHOTOS_SITE_ID="$SITE_ID" npx vite dev --port "$DEV_PORT" --clearScreen false) &
     DEV_PID=$!
 
     wait_for_http "http://localhost:$DEV_PORT" "dev server"
@@ -187,16 +186,16 @@ run_apache() {
         echo "=== [apache] [--ci] Skipping npm build: build/$SITE_ID already exists ==="
     else
         echo ""
-        echo "=== [apache] Building static site ==="
+        echo "=== [apache] Building static site '$SITE_ID' ==="
         # Explicit error check: set -e is suppressed inside functions called via ||
         # (see run_apache || OVERALL_EXIT=$? below), so failures must be caught manually.
-        (cd web && SITE_ENV="$SITE_ENV" DDPHOTOS_ALBUMS_DIR="$ALBUMS_DIR" DDPHOTOS_SITE_ID="$SITE_ID" npm run build) || return 1
+        (cd web && DDPHOTOS_ALBUMS_DIR="$ALBUMS_DIR" DDPHOTOS_SITE_ID="$SITE_ID" npm run build) || return 1
     fi
 
     # Build Docker image if missing or stale
     "$SDIR/docker-check.sh" --build || return 1
 
-    echo "=== [apache] Starting Apache on port $DOCKER_PORT ==="
+    echo "=== [apache] Starting Apache for site '$SITE_ID' on port $DOCKER_PORT ==="
     docker run -d --rm --name "$DOCKER_CONTAINER_APACHE" -p "$DOCKER_PORT:80" \
         -e DDPHOTOS_SITE_ID="$SITE_ID" \
         -v "$(pwd)/build":/build:ro \
@@ -220,14 +219,14 @@ run_nginx() {
         echo "=== [nginx] [--ci] Skipping npm build: build/$SITE_ID already exists ==="
     else
         echo ""
-        echo "=== [nginx] Building static site ==="
-        (cd web && SITE_ENV="$SITE_ENV" DDPHOTOS_ALBUMS_DIR="$ALBUMS_DIR" DDPHOTOS_SITE_ID="$SITE_ID" npm run build) || return 1
+        echo "=== [nginx] Building static site '$SITE_ID' ==="
+        (cd web && DDPHOTOS_ALBUMS_DIR="$ALBUMS_DIR" DDPHOTOS_SITE_ID="$SITE_ID" npm run build) || return 1
     fi
 
     # Build Docker image if missing or stale
     "$SDIR/docker-check.sh" --server nginx --build || return 1
 
-    echo "=== [nginx] Starting nginx on port $DOCKER_PORT_NGINX ==="
+    echo "=== [nginx] Starting nginx for site '$SITE_ID' on port $DOCKER_PORT_NGINX ==="
     docker run -d --rm --name "$DOCKER_CONTAINER_NGINX" -p "$DOCKER_PORT_NGINX:80" \
         -e DDPHOTOS_SITE_ID="$SITE_ID" \
         -v "$(pwd)/build":/build:ro \

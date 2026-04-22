@@ -6,7 +6,7 @@ This page covers the technical details of DD Photos for developers and those
 who want to understand how the pieces fit together. Topics include the SvelteKit
 frontend, environment configuration, all Makefile targets, `photogen` CLI flags
 and output layout, photo descriptions and sort order, encryption and password
-protection, deployment, Apache routing, and development tips.
+protection, deployment, Apache/nginx routing, and development tips.
 
 ## SvelteKit
 
@@ -103,7 +103,7 @@ VITE_LOG_REQUESTS=1 make sample-npm-run-dev
 ## Debugging
 
 To enable the `debug` library, where `debug()` calls are logged in the JavaScript
-Console, and also logged in the dev server, set `VITE_DEBUG=1`:
+console, and also logged in the dev server, set `VITE_DEBUG=1`:
 
 ```bash
 VITE_DEBUG=1 make sample-npm-run-dev
@@ -131,20 +131,20 @@ $effect(() => { debug("In home page svelte, got $props()", data) });
 ### Site Identity (`albums.yaml`)
 
 Site identity settings live in the `settings:` block of `albums.yaml` and are written
-into `config.json` by `photogen`. The frontend reads them at runtime via `fetch('/albums/config.json')` —
-no build-time injection needed.
+into either `config.json` or `html.json` by `photogen`. The frontend reads them at 
+runtime via `fetch('/albums/[config|html].json')` — no build-time injection needed.
 
-| Setting              | Required | Description                                                                                                                                                                 |
-|----------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `site_name`          | yes      | Site title shown in the browser tab and OG tags                                                                                                                             |
-| `site_url`           | yes      | Canonical base URL (e.g. `https://photos.example.com`); used in sitemap and OG tags                                                                                         |
-| `site_description`   | yes      | Meta description and OG description for the home page                                                                                                                       |
-| `copyright_owner`    | yes      | Name shown in the footer copyright line                                                                                                                                     |
-| `copyright_year`     | yes      | Start year shown in the footer copyright line                                                                                                                               |
-| `allow_crawling`     | no       | Set to `true` to allow search engine crawling; adds `Sitemap:` to `robots.txt` (default: `false`)                                                                           |
-| `site_title_html`    | no       | HTML for the site title on the home page; falls back to `site_name` when omitted. Allows links, emphasis, etc. Written to `html.json` / `html.enc.json`, not `config.json`. |
-| `site_subtitle_html` | no       | HTML rendered below the site title in a smaller font. Written to `html.json` / `html.enc.json`.                                                                             |
-| `site_overview_html` | no       | HTML rendered above the album cards (slightly larger than album descriptions). Written to `html.json` / `html.enc.json`.                                                    |
+| Setting              | Required | Description                                                                                                                                              |
+|----------------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `site_name`          | yes      | Site title shown in the browser tab and OG tags                                                                                                          |
+| `site_url`           | yes      | Canonical base URL (e.g. `https://photos.example.com`); used in sitemap and OG tags                                                                      |
+| `site_description`   | yes      | Meta description and OG description for the home page                                                                                                    |
+| `copyright_owner`    | yes      | Name shown in the footer copyright line                                                                                                                  |
+| `copyright_year`     | yes      | Start year shown in the footer copyright line                                                                                                            |
+| `allow_crawling`     | no       | Set to `true` to allow search engine crawling; adds `Sitemap:` to `robots.txt` (default: `false`)                                                        |
+| `site_title_html`    | no       | HTML for the site title on the home page; falls back to `site_name` when omitted. Allows links, emphasis, etc. Written to `html.json` / `html.enc.json`. |
+| `site_subtitle_html` | no       | HTML rendered below the site title in a smaller font. Written to `html.json` / `html.enc.json`.                                                          |
+| `site_overview_html` | no       | HTML rendered above the album cards (slightly larger than album descriptions). Written to `html.json` / `html.enc.json`.                                 |
 
 `photogen`'s `Config.Validate()` enforces all required fields before any files are written.
 
@@ -153,33 +153,25 @@ no build-time injection needed.
 The `site.env` file holds variables used only by deployment scripts and tests — nothing
 that affects the built site itself.
 
-| Variable            | Used by                     | Description                                                     |
-|---------------------|-----------------------------|-----------------------------------------------------------------|
-| `CLOUDFRONT_ID`     | `bin/deploy-photos.sh`      | CloudFront distribution ID for cache invalidation (deploy only) |
-| `S3_BUCKET`         | `bin/deploy-photos.sh`      | S3 bucket name for deployment (S3 mode only; requires `--s3`)   |
-| `RSYNC_DEST`        | `bin/deploy-photos.sh`      | Rsync destination path on the server (EC2/rsync mode only)      |
-| `TEST_ALBUM_LOCAL`  | `bin/test-photos-server.sh` | Album slug used for local server tests                          |
-| `TEST_ALBUM_PROD`   | `bin/test-photos-server.sh` | Album slug used for production tests                            |
-| `TEST_ALBUM_HYPHEN` | `bin/test-photos-server.sh` | Album slug with a hyphen (tests URL routing edge case)          |
+| Variable            | Used by                     | Description                                                           |
+|---------------------|-----------------------------|-----------------------------------------------------------------------|
+| `CLOUDFRONT_ID`     | `bin/deploy-photos.sh`      | CloudFront distribution ID; if set, cache is invalidated after deploy |
+| `S3_BUCKET`         | `bin/deploy-photos.sh`      | S3 bucket name for deployment (S3 mode only; requires `--s3`)         |
+| `RSYNC_DEST`        | `bin/deploy-photos.sh`      | Rsync destination path on the server (rsync mode only)                |
+| `TEST_ALBUM_LOCAL`  | `bin/test-photos-server.sh` | Album slug used for local server tests                                |
+| `TEST_ALBUM_PROD`   | `bin/test-photos-server.sh` | Album slug used for production tests                                  |
+| `TEST_ALBUM_HYPHEN` | `bin/test-photos-server.sh` | Album slug with a hyphen (tests URL routing edge case)                |
 
-The `bin` scripts `source` this file directly. For local development, these variables
-are not needed — only `albums.yaml` settings are required.
-
-The `SITE_ENV` environment variable overrides which `site.env` file is loaded. This is useful
-when your config lives outside the repo (e.g. in a private config repo):
-
-```bash
-SITE_ENV=~/work/my-config/site.env make web-npm-run-dev
-```
+The `bin` scripts `source` this file directly.
 
 ### Album Location Variables
 
 Two variables tell the dev server, build, and Docker container where to find album data:
 
-| Variable              | Default  | Description                                                                     |
-|-----------------------|----------|---------------------------------------------------------------------------------|
-| `DDPHOTOS_ALBUMS_DIR` | `albums` | Path to the root albums directory (absolute or repo-root-relative)              |
-| `DDPHOTOS_SITE_ID`    | `sample` | Site ID — selects `<DDPHOTOS_ALBUMS_DIR>/<DDPHOTOS_SITE_ID>` as the active site |
+| Variable              | Default  | Description                                                                                                                     |
+|-----------------------|----------|---------------------------------------------------------------------------------------------------------------------------------|
+| `DDPHOTOS_ALBUMS_DIR` | `albums` | Path to the root albums directory (absolute or repo-root-relative)                                                              |
+| `DDPHOTOS_SITE_ID`    | `sample` | Site ID — selects `<DDPHOTOS_ALBUMS_DIR>/<DDPHOTOS_SITE_ID>` as the active site. Also used to choose active build under `build` |
 
 Defaults are defined in `config/defaults.env` and are automatically picked up by the Makefile
 and `vite.config.ts`. Override them on the command line as needed:
@@ -190,9 +182,6 @@ DDPHOTOS_SITE_ID=prod make web-npm-run-dev
 
 # Albums directory outside the repo
 DDPHOTOS_ALBUMS_DIR=~/photos/albums DDPHOTOS_SITE_ID=mySite make web-npm-build
-
-# Both via SITE_ENV and album vars together
-SITE_ENV=~/work/my-config/site.env DDPHOTOS_ALBUMS_DIR=~/photos/albums DDPHOTOS_SITE_ID=prod make web-npm-build
 ```
 
 These variables are consumed by:
@@ -203,42 +192,48 @@ These variables are consumed by:
 
 ## Makefile Targets
 
-Common tasks are available via `make` from the repo root:
+Common tasks are available via `make` from the repo root.
 
-| Target                       | Description                                                                        |
-|------------------------------|------------------------------------------------------------------------------------|
-| `help`                       | Show all available make targets (default when running `make`)                      |
-| `build`                      | Compile all Go binaries                                                            |
-| `test`                       | Run Go unit tests                                                                  |
-| `mod-tidy`                   | Run `go mod tidy` to clean up imports                                              |
-| `clean-cache`                | Run `go clean -cache` (useful after a vips library upgrade)                        |
-| `vet`                        | Run `go vet` static analysis                                                       |
-| `web-nvm-install`            | Install the Node version specified in `web/.nvmrc`                                 |
-| `web-npm-install`            | Install npm dependencies in `web/`                                                 |
-| `web-npm-run-dev`            | Start Vite dev server and open browser                                             |
-| `web-npm-build`              | Build the static site into `build/<site-id>/`                                      |
-| `web-docker-build-apache`    | Build the `photos-apache` Docker image                                             |
-| `web-docker-build-nginx`     | Build the `photos-nginx` Docker image                                              |
-| `web-docker-run-apache`      | Run Apache on port 8080 (mounts `build/` and `albums/<site-id>/`)                  |
-| `web-docker-run-nginx`       | Run nginx on port 8080 (mounts `build/` and `albums/<site-id>/`)                   |
-| `web-docker-stop`            | Stop the running `photos-apache` container                                         |
-| `web-docker-test`            | Run `bin/test-photos-server.sh` against `localhost:8080`                           |
-| `web-playwright-install`     | One-time setup: install `@playwright/test` and Chromium binary                     |
-| `web-playwright-test-apache` | Run Playwright e2e tests (starts Docker/Apache on port 8083, runs, stops)          |
-| `web-playwright-test-nginx`  | Run Playwright e2e tests (starts Docker/nginx on port 8084, runs, stops)           |
-| `web-playwright-test-dev`    | Run Playwright e2e tests (against Vite dev server)                                 |
-| `web-playwright-test-all`    | Run `bin/test-all.sh` across all password/CSS variants                             |
-| `sample-photogen`            | Run photogen using `sample/config/albums.yaml`                                     |
-| `sample-photogen-pw-all`     | Run photogen using sample config, all albums password-protected                    |
-| `sample-photogen-pw-uganda`  | Run photogen using sample config, Uganda album password-protected                  |
-| `sample-photogen-css`        | Run photogen using sample config with custom CSS injected                          |
-| `sample-photogen-demo`       | Run photogen using sample config with custom CSS and all albums password-protected |
-| `sample-demo`                | One-step demo: photogen (CSS + passwords) and run dev server                       |
-| `sample-build`               | Build the static site using sample config                                          |
-| `sample-npm-run-dev`         | Run the Vite dev server using sample config                                        |
-| `sample-test-apache`         | Run routing tests against Docker/Apache on port 8082                               |
-| `sample-test-nginx`          | Run routing tests against Docker/nginx on port 8082                                |
-| `web-screenshots`            | Capture screenshots (requires a running server on port 8080)                       |
+**NOTE**: Most targets use `$DDPHOTOS_SITE_ID` to choose which site to operate on.  This defaults to `sample`,
+as defined in `config/defaults.env`.
+
+| Target                       | Description                                                                                   |
+|------------------------------|-----------------------------------------------------------------------------------------------|
+| `help`                       | Show all available make targets (default when running `make`)                                 |
+| `build`                      | Compile all Go binaries                                                                       |
+| `test`                       | Run Go unit tests                                                                             |
+| `mod-tidy`                   | Run `go mod tidy` to clean up imports                                                         |
+| `clean-cache`                | Run `go clean -cache` (useful after a vips library upgrade)                                   |
+| `vet`                        | Run `go vet` static analysis                                                                  |
+| `web-nvm-install`            | Install the Node version specified in `web/.nvmrc`                                            |
+| `web-npm-install`            | Install npm dependencies in `web/`                                                            |
+| `web-npm-run-dev`            | Start Vite dev server and open browser                                                        |
+| `web-npm-run-dev-https`      | Start Vite dev server over HTTPS (required for `crypto.subtle` on mobile/LAN)                 |
+| `web-npm-build`              | Build the static site into `build/$DDPHOTOS_SITE_ID/`                                         |
+| `web-docker-build-apache`    | Build the `photos-apache` Docker image                                                        |
+| `web-docker-build-nginx`     | Build the `photos-nginx` Docker image                                                         |
+| `web-docker-run-apache`      | Run Apache on port 8080 (mounts `build/` and `albums/$DDPHOTOS_SITE_ID/`)                     |
+| `web-docker-run-nginx`       | Run nginx on port 8080 (mounts `build/` and `albums/$DDPHOTOS_SITE_ID/`)                      |
+| `web-docker-stop`            | Stop the container running on port 8080                                                       |
+| `web-docker-test`            | Run `bin/test-photos-server.sh` against `localhost:8080`                                      |
+| `web-playwright-install`     | One-time setup: install `@playwright/test` and Chromium binary                                |
+| `web-playwright-test-apache` | Run Playwright e2e tests (starts Docker/Apache on port 8083, runs, stops)                     |
+| `web-playwright-test-nginx`  | Run Playwright e2e tests (starts Docker/nginx on port 8084, runs, stops)                      |
+| `web-playwright-test-dev`    | Run Playwright e2e tests (against Vite dev server)                                            |
+| `web-playwright-test-all`    | Run `bin/test-all.sh` across all password/CSS variants                                        |
+| `web-sanity-test`            | Quick sanity check: Apache, no-passwords + all-passwords (companion to `make build test vet`) |
+| `sample-photogen`            | Run photogen using `sample/config/albums.yaml`                                                |
+| `sample-photogen-pw-all`     | Run photogen using sample config, all albums password-protected                               |
+| `sample-photogen-pw-uganda`  | Run photogen using sample config, Uganda album password-protected                             |
+| `sample-photogen-css`        | Run photogen using sample config with custom CSS injected                                     |
+| `sample-photogen-demo`       | Run photogen using sample config with custom CSS and all albums password-protected            |
+| `sample-demo`                | One-step demo: photogen (CSS + passwords) and run dev server                                  |
+| `sample-build`               | Build the static site using sample config                                                     |
+| `sample-npm-run-dev`         | Run the Vite dev server using sample config                                                   |
+| `sample-npm-run-dev-css`     | Run the Vite dev server using sample config with custom CSS                                   |
+| `sample-test-apache`         | Run routing tests against Docker/Apache on port 8082                                          |
+| `sample-test-nginx`          | Run routing tests against Docker/nginx on port 8082                                           |
+| `web-screenshots`            | Capture screenshots (requires a running server on port 8080)                                  |
 
 ## Generating Photos (`photogen`)
 
@@ -263,6 +258,27 @@ settings:
 Album descriptions are in a TXT file (default: `config/descriptions.txt`).
 See [config/descriptions.example.txt](config/descriptions.example.txt)
 for the format.
+
+The `settings.id` field is required and determines the output directory name (e.g. `id: prod`
+produces `albums/prod`). It must contain only lowercase letters, digits, and hyphens.
+The `-site-id` flag overrides this, which is useful when generating an encrypted variant
+alongside the standard output from the same config.
+
+Output goes to `$DDPHOTOS_ALBUMS_DIR}/{id}` (git-ignored). `DDPHOTOS_ALBUMS_DIR` defaults
+to `albums` at the repo root (from `config/defaults.env`). Override with the `-out` flag
+or by setting `DDPHOTOS_ALBUMS_DIR` in the environment.
+
+To run with defaults:
+
+```bash
+go run cmd/photogen/photogen.go -resize -index -clean -doit
+```
+
+To use a different albums file (e.g., a development subset):
+
+```bash
+go run cmd/photogen/photogen.go -albums albums-dev.yaml -resize -index -clean -doit
+```
 
 ### Hero Image
 
@@ -303,16 +319,6 @@ built-in styles, so any rules inside it take effect as normal cascade overrides.
 Redefining CSS custom properties (e.g. `--bg-color`, `--text-color-2nd`) is the
 cleanest approach — no specificity battles needed.
 
-```bash
-go run cmd/photogen/photogen.go -resize -index -doit
-```
-
-To use a different albums file (e.g., a development subset):
-
-```bash
-go run cmd/photogen/photogen.go -albums albums-dev.yaml -resize -index -doit
-```
-
 ### CLI Flags
 
 | Flag          | Default       | Description                                                                                    |
@@ -334,15 +340,6 @@ go run cmd/photogen/photogen.go -albums albums-dev.yaml -resize -index -doit
 | `-clean`      | `false`       | Remove stale files from processed album directories after a run (requires `-resize`)           |
 | `-hero-only`  | `false`       | Regenerate the hero image only; skips all album processing and index/JSON generation           |
 
-`settings.id` is required and determines the output directory name (e.g. `id: prod`
-produces `albums/prod`). It must contain only lowercase letters, digits, and hyphens.
-The `-site-id` flag overrides this, which is useful when generating an encrypted variant
-alongside the standard output from the same config.
-
-Output goes to `{DDPHOTOS_ALBUMS_DIR}/{id}` (git-ignored). `DDPHOTOS_ALBUMS_DIR` defaults
-to `albums` at the repo root (from `config/defaults.env`). Override with the `-out` flag
-or by setting `DDPHOTOS_ALBUMS_DIR` in the environment.
-
 ### Photo Descriptions (`photogen.txt`)
 
 To add per-photo descriptions, create a `photogen.txt` file in the album's
@@ -354,6 +351,7 @@ filename_without_extension Description text here.
 ```
 
 Example:
+
 ```
 Patagonia-042 First view of Torres del Paine at sunrise.
 Patagonia-107 Crossing the John Gardner Pass in the wind.
@@ -442,8 +440,8 @@ hero/CSS filenames) needed to bootstrap the frontend before any password is ente
 
 Custom HTML fields (`site_title_html`, `site_subtitle_html`, `site_overview_html`) can
 contain private information such as links to private documents or contact details. When
-a site password is configured, these fields are written to `html.enc.json` (encrypted)
-rather than `config.json`. On unencrypted sites they are written to `html.json`
+a site password is configured, these fields are written to `html.enc.json` (encrypted). 
+On unencrypted sites they are written to `html.json`
 (plaintext). If none of the three fields are set, neither file is written. The frontend
 fetches and decrypts `html.enc.json` as part of the same unlock step as `albums.enc.json`,
 so there is no additional password prompt.
@@ -578,23 +576,6 @@ to right-click the photo, copy the image URL, and pass it to `bin/search_cover.s
 bin/search_cover.sh <url>
 ```
 
-Example:
-
-```bash
-bin/search_cover.sh http://localhost:5173/albums/banff-2002/full/0918bedf-2f7d-dedc-9e89-b99ec5bb2752.webp
-```
-
-Output:
-
-```
-Album:  banff-2002
-Index:  albums/sample/banff-2002/index.json
-src:    full/0918bedf-2f7d-dedc-9e89-b99ec5bb2752.webp
-
-fileName:   banff-2002-original-name.webp
-id:         banff-2002-original-name
-```
-
 The script parses the album slug and image path from the URL, locates the album's
 `index.json` (or `index.enc.json` for encrypted albums — decoded automatically via
 `cmd/decode`), and searches for the matching `src` entry to print the `fileName`, `id`,
@@ -604,7 +585,19 @@ The search is scoped to `DDPHOTOS_ALBUMS_DIR/DDPHOTOS_SITE_ID` (defaults from
 `config/defaults.env`). Override to search a different site:
 
 ```bash
-DDPHOTOS_SITE_ID=prod bin/search_cover.sh <url>
+DDPHOTOS_SITE_ID=sample-pw-all bin/search_cover.sh http://localhost:5173/albums/uganda/full/1996ae71-5ada-d233-8f26-53e46fac4f64.webp```
+```
+
+Output:
+
+```
+Album:  uganda
+Index:  /Users/donohoe/work/ddphotos/albums/sample-pw-all/uganda/index.enc.json
+src:    full/1996ae71-5ada-d233-8f26-53e46fac4f64.webp
+
+fileName: subfolder_img_840_d.jpg
+id:       subfolder_img_840_d
+sourcePath: uganda/subfolder/img_840_d.jpg
 ```
 
 ## Testing
@@ -627,10 +620,8 @@ any of the SvelteKit files change or even when `photogen` is re-run.
 # Sample site
 make sample-npm-run-dev
 
-make web-npm-run-dev
-
-# Uses custom site.env
-SITE_ENV=private/config/site.env make web-npm-run-dev
+# Named site
+DDPHOTOS_SITE_ID=<site-id> make web-npm-run-dev
 ```
 
 You should see a `VITE` message and a browser window should
@@ -644,11 +635,11 @@ As seen in the [README](README.md), the site has a build step:
 # Sample site
 make sample-build
 
-# Uses default config/site.env
+# Uses default site (specified in config/defaults.env)
 make web-npm-build
 
-# Uses custom site.env
-SITE_ENV=private/config/site.env make web-npm-build
+# Uses named site
+DDPHOTOS_SITE_ID=<site-id> make web-npm-build
 ```
 
 Once the site is built, you can serve it via Docker (Apache/nginx).
@@ -669,6 +660,9 @@ make web-docker-build-nginx  # nginx
 # Site rebuilds do not require a restart
 make web-docker-run-apache # Apache
 make web-docker-run-nginx  # nginx
+
+# Uses named site
+DDPHOTOS_SITE_ID=<site-id> make web-docker-run-apache
 ```
 
 You should be able to see the site at [localhost:8080](http://localhost:8080).
@@ -706,13 +700,13 @@ the different open paths.
 # One-time setup (downloads ~100 MB Chromium binary)
 make web-playwright-install
 
-# starts a separate Docker/Apache on port 8083, runs tests, stops Docker
+# starts a separate Docker/Apache on port 8083, runs no-passwords tests, stops Docker
 make web-playwright-test-apache
 
-# starts a separate Docker/nginx on port 8084, runs tests, stops Docker
+# starts a separate Docker/nginx on port 8084, runs no-passwords tests, stops Docker
 make web-playwright-test-nginx
 
-# runs against dev server (which must be running)
+# starts a separate dev server on port 5174, runs no-passwords tests, stops Docker
 make web-playwright-test-dev
 ```
 
@@ -733,9 +727,10 @@ Smoke and caption tests assume the presence of albums in the sample website (`an
 Navigation tests are fully dynamic - they read album names from the page at runtime and
 work against any site without hardcoding album names.
 
-The `baseURL` defaults to `http://localhost:8080` (used by `deploy-photos.sh`)
-and can be overridden via `PLAYWRIGHT_BASE_URL` - the Makefile target passes
-`http://localhost:8081` to avoid port conflicts.
+The `baseURL` is set via `PLAYWRIGHT_BASE_URL`. `bin/run-tests.sh` sets it automatically
+to the port for the selected mode (5174 for dev, 8083 for Apache, 8084 for nginx).
+The `playwright.config.ts` default of `http://localhost:8080` is only used when running
+Playwright directly (e.g. via `deploy-photos.sh`).
 
 Password and CSS tests are gated by environment variables so they only run against
 the appropriate site variant:
@@ -775,6 +770,16 @@ bin/run-tests.sh --passwords sample/config/passwords-all.yaml --mode apache
 bin/run-tests.sh --css sample/config/custom.css --mode dev
 ```
 
+**Sanity Check**
+
+A good sanity check verifies against Apache (which requires a build), and tests
+both password and no-password sites.  It's quicker than running all 4 variants against
+dev, Apache and nginx:
+
+```bash
+make web-sanity-test
+```
+
 The `bin/deploy-photos.sh` script runs Playwright automatically: locally before rsync,
 and against production after CloudFront cache invalidation.
 
@@ -799,6 +804,8 @@ allow use of `.htaccess` files (`AllowOverride All`):
 
 The `.htaccess` file (`web/static/.htaccess`) configures URL routing:
 
+- **Cache headers** — JSON files get `Cache-Control: no-cache` (content can change in-place);
+  WebP files get `Cache-Control: max-age=31536000, immutable` (UUID filenames, never change)
 - **`DirectorySlash Off`** - Prevents Apache from auto-appending trailing slashes to directories
 - **Trailing slash redirect** - 301 redirects URLs with trailing slashes to their clean version
   (e.g., `/albums/patagonia/` -> `/albums/patagonia`)
@@ -808,41 +815,95 @@ The `.htaccess` file (`web/static/.htaccess`) configures URL routing:
   (e.g., `/albums/patagonia/15` serves `patagonia.html`; JS reads the path and opens the lightbox)
 - **SPA fallback** - Unknown root-level paths fall back to `index.html` for client-side routing
 
+## nginx
+
+Unlike Apache, nginx needs no per-directory config file — all routing rules live in
+`web/nginx.conf`, which is baked into the Docker image. `web/nginx-entrypoint.sh`
+symlinks the active build into the document root at container startup (same role as
+`web/apache-entrypoint.sh`).
+
+### nginx.conf
+
+- **Cache headers** — JSON files get `Cache-Control: no-cache`; WebP files get `Cache-Control: max-age=31536000, immutable`
+- **Trailing slash redirect** — 301 redirects URLs with trailing slashes to their clean version
+  (e.g., `/albums/patagonia/` → `/albums/patagonia`)
+- **Photo permalink rewrite** — Serves album HTML for photo permalink URLs
+  (e.g., `/albums/patagonia/15` serves `patagonia.html`; JS reads the path and opens the lightbox)
+- **HTML rewrite** — Serves `.html` files without the extension
+  (e.g., `/albums/patagonia` serves `patagonia.html`)
+- **SPA fallback** — Unknown root-level paths fall back to `index.html`; deeper unknown paths return 404
+
 ## Deployment
 
 DD Photos was originally built to serve my personal photo albums.  My first deployment
 re-used an existing EC2 instance with Apache which served my other websites.  The
 second (and current) deployment uses S3 as the backing store.  Both are described below.
 
-### EC2/Apache
+### Syncing Logic
 
-In this scenario, traffic is handled by CloudFront, which filters 
-requests through a WAFv2 web ACL before forwarding clean traffic to an Apache 
-origin on EC2.
+The web root is assembled from two independent sources:
+
+| Source              | Contents                                                                         | Maps to             |
+|---------------------|----------------------------------------------------------------------------------|---------------------|
+| `build/<site-id>/`  | SvelteKit output: HTML shell, JS/CSS bundles, pre-rendered `albums/*.html` pages | web root `/`        |
+| `albums/<site-id>/` | photogen output: WebP images, JSON indexes, hero images, `sitemap.xml`           | web root `/albums/` |
+
+```mermaid
+flowchart LR
+    build["build/&lt;site-id&gt;/\nindex.html, _app/\nalbums/antarctica.html"]
+    albumsdir["albums/&lt;site-id&gt;/\nalbums.json, config.json\nantarctica/index.json\nantarctica/uuid.webp"]
+    root["Web root /\nindex.html\nalbums/antarctica.html  ← build\nalbums/index.json      ← album data\nalbums/uuid.webp       ← album data"]
+
+    build -->|"Pass 1: sync → /"| root
+    albumsdir -->|"Pass 2: sync → /albums/"| root
+```
+
+Both sources contribute files under `/albums/` — `build/` provides the pre-rendered `.html` pages
+and `albums/` provides images and JSON — so a two-pass sync is required to prevent each pass from
+deleting the other's files:
+
+- **Pass 1** (build → `/`): syncs app files; skips or protects existing `albums/` data so images
+  and JSON are not deleted
+- **Pass 2** (album data → `/albums/`): syncs images and JSON; skips `*.html` so pre-rendered
+  album pages are not deleted
+
+Both rsync and S3 implement this pattern, with minor differences:
+
+|                      | rsync                                                                                                                                   | S3                                                                                                             |
+|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| **Pass 1**           | `--filter='protect albums/**'` preserves album data on the server                                                                       | `--exclude "albums/*" --include "albums/*.html"` uploads only `.html` from `albums/`                           |
+| **Pass 2**           | `--exclude=*.html` skips pre-rendered pages                                                                                             | Two sub-passes: one for JSON/XML/covers (`Cache-Control: no-cache`), one for WebP (`Cache-Control: immutable`) |
+| **Change detection** | Pass 1 uses `--checksum` (Vite resets timestamps every build); Pass 2 uses size+time (photogen preserves timestamps on unchanged files) | Size+time only (no checksum option in `aws s3 sync`)                                                           |
+
+### Apache + rsync
+
+In this scenario, traffic is handled by CloudFront, which filters
+requests through a WAFv2 web ACL before forwarding clean traffic to an Apache
+origin on any SSH-accessible server.
 
 ```mermaid
 flowchart LR
     User -->|HTTPS| WAF["WAFv2 Web ACL"]
     WAF --> CF["CloudFront CDN"]
-    CF -->|HTTP| Apache["EC2 / Apache"]
+    CF -->|HTTP| Apache["Server / Apache"]
 ```
 
-The WAF (Web Application Firewall) inspects every incoming request and blocks 
+The WAF (Web Application Firewall) inspects every incoming request and blocks
 suspicious or malicious traffic (things like bots or known bad IP addresses)
 before it ever reaches my server.
 
-The CDN (Content Delivery Network) caches content at edge locations around 
+The CDN (Content Delivery Network) caches content at edge locations around
 the world so visitors get fast load times regardless of where they are,
 and my origin server handles far less traffic.
 
-The deployment script (described below) builds the static site and rsyncs it to 
-my EC2 instance behind CloudFront.  It is specific to my setup, but it is
+The deployment script (described below) builds the static site and rsyncs it to
+a server behind CloudFront. It is specific to my setup, but it is
 parameterized via `site.env` so that others with a similar setup can re-use it.
 It can also be extended or changed to suit your needs.
 
 ### S3 + CloudFront
 
-An alternative to EC2 is to serve the site entirely from S3 and CloudFront — no server
+An alternative is to serve the site entirely from S3 and CloudFront — no server
 required. Site files live in a private S3 bucket; CloudFront serves them using a
 signed-request mechanism called OAC (Origin Access Control).
 
@@ -924,19 +985,19 @@ function handler(event) {
 
 ### Deploy Script
 
-`bin/deploy-photos.sh` handles both S3 and EC2/rsync modes. Add `--s3` for S3 mode.
+`bin/deploy-photos.sh` handles both S3 and rsync modes. Add `--s3` for S3 mode.
 
 1. Runs `photogen` to resize images and generate JSON
 2. Builds the static site via `npm run build` into `build/<site-id>/`
-3. *(EC2 only)* Starts Docker/Apache, runs `bin/test-photos-server.sh --local` to verify routing
-   locally, runs Playwright tests against Docker/Apache, then stops the container
+3. *(rsync mode only)* Starts Docker/Apache, runs `bin/test-photos-server.sh --local` to verify
+   routing locally, runs Playwright tests against Docker/Apache, then stops the container
 4. Deploys the site:
    - **S3**: two-pass `aws s3 sync` — pass 1 syncs the build output (excluding `albums/*` but
      re-including `albums/*.html`); pass 2 syncs album images and JSON (`--size-only`, excluding
      `*.html`). The two-pass approach keeps app files and photo data independent.
-   - **EC2**: two-pass `rsync` — pass 1 uses `--checksum` (Vite resets timestamps on every build);
+   - **rsync**: two-pass `rsync` — pass 1 uses `--checksum` (Vite resets timestamps on every build);
      pass 2 syncs album data independently.
-5. Invalidates the CloudFront cache (`$CLOUDFRONT_ID`)
+5. Invalidates the CloudFront cache via `$CLOUDFRONT_ID` (skipped if not set)
 6. Runs `bin/test-photos-server.sh` to verify the deployment against production
 7. Runs Playwright tests against production (URL read from `config.json`)
 
@@ -946,7 +1007,7 @@ The script uses `set -eo pipefail` — any failure aborts before deployment.
 
 | Flag               | Description                                                                                                                     |
 |--------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| `--s3`             | Deploy to S3 instead of EC2 via rsync (requires `S3_BUCKET` in `site.env`; skips pre-deploy Docker/Apache and Playwright tests) |
+| `--s3`             | Deploy to S3 instead of rsync (requires `S3_BUCKET` in `site.env`; skips pre-deploy Docker/Apache and Playwright tests)         |
 | `--dry-run`        | Pass `--dry-run`/`--dryrun` to rsync or `aws s3 sync`; skips CloudFront invalidation and post-deploy tests                      |
 | `--no-photogen`    | Skip photo generation step                                                                                                      |
 | `--no-rsync`       | Skip deploy, CloudFront invalidation, and post-deploy tests (build + local test only)                                           |
@@ -963,7 +1024,7 @@ bin/deploy-photos.sh --s3                          # full S3 deploy
 bin/deploy-photos.sh --s3 --dry-run                # preview what s3 sync would transfer, no changes made
 bin/deploy-photos.sh --s3 --no-photogen            # skip photo generation
 
-# EC2/rsync mode
+# rsync mode
 bin/deploy-photos.sh                               # full deploy
 bin/deploy-photos.sh --dry-run                     # preview what rsync would transfer, no changes made
 bin/deploy-photos.sh --no-photogen                 # skip photo generation
@@ -1033,3 +1094,9 @@ uv pip install -r requirements.txt
 
 The `.venv/` directory is git-ignored. The `make web-screenshots` target calls
 `.venv/bin/python3` directly, so no manual activation is needed.
+
+## Project History
+
+Much of this project was built with Claude Code. See [HISTORY.md](docs/HISTORY.md)
+for a detailed session log.
+
