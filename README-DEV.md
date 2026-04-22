@@ -848,15 +848,55 @@ The web root is assembled from two independent sources:
 | `build/<site-id>/`  | SvelteKit output: HTML shell, JS/CSS bundles, pre-rendered `albums/*.html` pages | web root `/`        |
 | `albums/<site-id>/` | photogen output: WebP images, JSON indexes, hero images, `sitemap.xml`           | web root `/albums/` |
 
-```mermaid
-flowchart LR
-    build["build/&lt;site-id&gt;/\nindex.html, _app/\nalbums/antarctica.html"]
-    albumsdir["albums/&lt;site-id&gt;/\nalbums.json, config.json\nantarctica/index.json\nantarctica/uuid.webp"]
-    root["Web root /\nindex.html\nalbums/antarctica.html  ← build\nalbums/index.json      ← album data\nalbums/uuid.webp       ← album data"]
-
-    build -->|"Pass 1: sync → /"| root
-    albumsdir -->|"Pass 2: sync → /albums/"| root
 ```
+build/<site-id>/              albums/<site-id>/
+  index.html                    albums.json
+  albums.html                   config.json
+  404.html                      hero.jpg
+  robots.txt                    html.json
+  *.png, *.ico                  sitemap.xml
+  _app/                         antarctica/
+  albums/                         cover.jpg
+    antarctica.html               index.json
+    hawaii.html                   full/
+    albums.json  (ignored)          *.webp
+    config.json  (ignored)        grid/
+    html.json    (ignored)          *.webp
+    antarctica/
+      index.json (ignored)
+         |                            |
+         | Pass 1: sync -> /          | Pass 2: sync -> /albums/
+         +----------------------------+
+                       |
+                       v
+               Web root /
+                 index.html    (build)
+                 albums.html   (build)
+                 404.html      (build)
+                 robots.txt    (build)
+                 *.png, *.ico  (build)
+                 _app/         (build)
+                 albums/
+                   antarctica.html  (build)
+                   hawaii.html      (build)
+                   albums.json      (albums)
+                   config.json      (albums)
+                   hero.jpg         (albums)
+                   html.json        (albums)
+                   sitemap.xml      (albums)
+                   antarctica/      (albums)
+                     cover.jpg    (albums)
+                     index.json   (albums)
+                     full/        (albums)
+                       *.webp  (albums)
+                     grid/        (albums)
+                       *.webp  (albums)
+```
+
+**NOTE**:  If passwords are on, you might see `albums.enc.json`, `html.enc.json` and `index.enc.json` files.
+
+SvelteKit copies album JSON into the build during pre-rendering, but those copies are marked
+`(ignored)` — excluded by Pass 1 and replaced by the authoritative files from `albums/`.
 
 Both sources contribute files under `/albums/` — `build/` provides the pre-rendered `.html` pages
 and `albums/` provides images and JSON — so a two-pass sync is required to prevent each pass from
