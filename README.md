@@ -1,4 +1,4 @@
-# DD Photos - Photo Album Website
+# DD Photos - Static Photo Album Site Generator
 
 [![CI](https://github.com/dougdonohoe/ddphotos/actions/workflows/ci.yml/badge.svg)](https://github.com/dougdonohoe/ddphotos/actions)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
