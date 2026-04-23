@@ -1,5 +1,8 @@
 # DD Photos - Photo Album Website
 
+[![CI](https://github.com/dougdonohoe/ddphotos/actions/workflows/ci.yml/badge.svg)](https://github.com/dougdonohoe/ddphotos/actions)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
 ## Motivation
 
 I was dissatisfied with photo sharing sites, especially Apple's iCloud shared albums,
@@ -292,6 +295,10 @@ variables in `site.env` to match your site.
 This page has the basics to get you started. See [README-DEV](README-DEV.md) for 
 complete details about `photogen`, the SvelteKit site, testing, 
 deployment and other technical information.
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 
