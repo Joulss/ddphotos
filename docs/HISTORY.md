@@ -1273,3 +1273,30 @@ A committed ed25519 key pair in `web/testdata/` (no passphrase) is baked into th
 - `sample-rsync-test` target is a one-liner calling `bin/rsync-test.sh` (previously a large inline recipe).
 - `README-DEV.md` Makefile table updated with both new targets.
 - CI gains a final step: `make sample-rsync-test`.
+
+### 62. 04/23/2026 - S3 Deploy Testing via MinIO
+
+#### Motivation
+
+The S3 deploy path (`deploy-photos.sh --s3`) had no automated test. CloudFront Functions (which handle URL routing in production) cannot be replicated locally, but the `aws s3 sync` logic — file placement, Cache-Control headers, and the `--exclude "albums/*"` boundary — can be verified against a local S3-compatible server.
+
+#### Approach
+
+`bin/s3-test.sh` starts a [MinIO](https://min.io/) container (~130MB, S3-compatible), creates a test bucket, builds a temporary config dir with `site_url` patched to `http://localhost:9000`, and runs `deploy-photos.sh --s3 --no-server-test --no-playwright`. Post-deploy server and Playwright tests are skipped because MinIO serves the S3 API only, not HTTP. The script then runs 21 assertions covering:
+
+- **Pass 1** — build files present at the bucket root; pre-rendered album HTML re-included via `--include "albums/*.html"`
+- **Pass 2a** — album metadata (`albums.json`, `sitemap.xml`, `index.json`, `cover.jpg`) present with `Cache-Control: no-cache`; `.html` files not deleted by Pass 2a `--delete`
+- **Pass 2b** — WebP images present with `Cache-Control: max-age=31536000,immutable`
+- **Boundary** — a sentinel `.webp` uploaded directly to `albums/` survives Pass 1 `--delete` (protected by `--exclude "albums/*"`), then is removed by Pass 2b `--delete`
+
+MinIO was chosen over LocalStack: LocalStack is ~1.1GB and hit a Docker 500 error locally; MinIO is ~130MB, starts in seconds, and supports the full S3 metadata API (including `CacheControl` on `HeadObject`).
+
+#### New files
+
+- `bin/s3-test.sh` — orchestrates the full test: start MinIO, create bucket, build temp config, run deploy, assert file placement and Cache-Control headers, clean up on exit
+
+#### Makefile and CI
+
+- `sample-s3-test` target calls `bin/s3-test.sh`.
+- `README-DEV.md` Makefile table and deploy testing snippet updated to document the new target.
+- CI gains a final step: `make sample-s3-test`.
