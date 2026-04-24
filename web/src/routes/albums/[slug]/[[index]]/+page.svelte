@@ -529,7 +529,7 @@
 </script>
 
 <OpenGraph
-	title={albumTitle}
+	title="{albumTitle} | {data.siteConfig.siteName}"
 	description={plainDescription ||
 		(album
 			? `${album.photos.length} photos from the '${albumTitle}' album`
