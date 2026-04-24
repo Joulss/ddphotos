@@ -461,6 +461,78 @@
 		}
 	});
 
+	function navigatePhotoCursor(currentIndex: number, direction: 'left' | 'right' | 'up' | 'down') {
+		const boxes = layout().boxes;
+		const photoCount = album?.photos.length ?? 0;
+		if (!boxes || boxes.length === 0 || !container) return;
+
+		let targetIndex: number | null = null;
+
+		if (direction === 'left') {
+			targetIndex = currentIndex > 0 ? currentIndex - 1 : null;
+		} else if (direction === 'right') {
+			targetIndex = currentIndex < photoCount - 1 ? currentIndex + 1 : null;
+		} else {
+			const current = boxes[currentIndex];
+			const currentCenterX = current.left + current.width / 2;
+
+			if (direction === 'up') {
+				const candidates = boxes
+					.map((box, i) => ({ box, i }))
+					.filter(({ box }) => box.top < current.top);
+				if (candidates.length === 0) return;
+				const nearestRowTop = Math.max(...candidates.map(({ box }) => box.top));
+				const rowPhotos = candidates.filter(({ box }) => box.top === nearestRowTop);
+				targetIndex = rowPhotos.reduce((bestIdx, { box, i }) => {
+					const dist = Math.abs(box.left + box.width / 2 - currentCenterX);
+					const bestBox = boxes[bestIdx];
+					const bestDist = Math.abs(bestBox.left + bestBox.width / 2 - currentCenterX);
+					return dist < bestDist ? i : bestIdx;
+				}, rowPhotos[0].i);
+			} else {
+				const candidates = boxes
+					.map((box, i) => ({ box, i }))
+					.filter(({ box }) => box.top > current.top);
+				if (candidates.length === 0) return;
+				const nearestRowTop = Math.min(...candidates.map(({ box }) => box.top));
+				const rowPhotos = candidates.filter(({ box }) => box.top === nearestRowTop);
+				targetIndex = rowPhotos.reduce((bestIdx, { box, i }) => {
+					const dist = Math.abs(box.left + box.width / 2 - currentCenterX);
+					const bestBox = boxes[bestIdx];
+					const bestDist = Math.abs(bestBox.left + bestBox.width / 2 - currentCenterX);
+					return dist < bestDist ? i : bestIdx;
+				}, rowPhotos[0].i);
+			}
+		}
+
+		if (targetIndex !== null) {
+			const target = container.querySelectorAll<HTMLElement>('.photo')[targetIndex];
+			target?.focus();
+			target?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+		}
+	}
+
+	function handlePhotoKeydown(e: KeyboardEvent, index: number) {
+		switch (e.key) {
+			case 'ArrowLeft':
+				e.preventDefault();
+				navigatePhotoCursor(index, 'left');
+				break;
+			case 'ArrowRight':
+				e.preventDefault();
+				navigatePhotoCursor(index, 'right');
+				break;
+			case 'ArrowUp':
+				e.preventDefault();
+				navigatePhotoCursor(index, 'up');
+				break;
+			case 'ArrowDown':
+				e.preventDefault();
+				navigatePhotoCursor(index, 'down');
+				break;
+		}
+	}
+
 	onMount(() => {
 		syncSiteId(siteId, data.siteConfig?.keyId);
 
@@ -561,6 +633,7 @@
 						height: {box.height}px;
 					"
 					onclick={() => openLightbox(i)}
+					onkeydown={(e) => handlePhotoKeydown(e, i)}
 				>
 					<!-- src starts empty; set in onMount (immediately or after delay in ?slow mode).
 					     loading="lazy" is dropped in slow mode to avoid browser deferring
@@ -757,7 +830,8 @@
 		pointer-events: none;
 	}
 
-	.photo:hover .photo-caption {
+	.photo:hover .photo-caption,
+	.photo:focus .photo-caption {
 		opacity: 1;
 		transform: translateY(0);
 	}
