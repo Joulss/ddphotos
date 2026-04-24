@@ -54,6 +54,7 @@
 	// savedScrollY  — module-level, survives component remounts between navigations
 	// pendingScroll — component-level $state, triggers the $effect, cleared after scroll
 	let pendingScroll = $state(0);
+	let pendingFocusSlug = $state<string | null>(null);
 
 	beforeNavigate(() => {
 		savedScrollY = window.scrollY;
@@ -62,8 +63,10 @@
 	afterNavigate(({ from }) => {
 		const y = savedScrollY;
 		savedScrollY = 0;
-		if (y > 0 && from?.url.pathname.startsWith('/albums/')) {
-			pendingScroll = y; // $effect below will scroll once albums renders
+		if (from?.url.pathname.startsWith('/albums/')) {
+			if (y > 0) pendingScroll = y;
+			pendingFocusSlug = from.url.pathname.split('/')[2] ?? null; // /albums/slug[/index]
+			// $effect below handles unhide once albums renders
 		} else {
 			// Not returning from album — unhide (set in onMount) and optionally reset scroll
 			requestAnimationFrame(() => {
@@ -73,15 +76,20 @@
 		}
 	});
 
-	// Fire whenever albums becomes non-null (grid rendered) AND we have a pending scroll.
+	// Fire whenever albums becomes non-null (grid rendered) AND we have pending scroll/focus.
 	// $effect runs after Svelte commits DOM updates, so the grid is in the DOM by this point.
 	$effect(() => {
-		if (albums && pendingScroll > 0) {
+		if (albums && (pendingScroll > 0 || pendingFocusSlug)) {
 			const y = pendingScroll;
-			untrack(() => { pendingScroll = 0; }); // clear without re-triggering this effect
+			const slug = pendingFocusSlug;
+			untrack(() => { pendingScroll = 0; pendingFocusSlug = null; }); // clear without re-triggering
 			requestAnimationFrame(() => {
 				document.documentElement.style.visibility = '';
-				window.scrollTo(0, y);
+				if (y > 0) window.scrollTo(0, y);
+				if (slug) {
+					const card = document.querySelector<HTMLElement>(`.album-card[data-slug="${slug}"]`);
+					card?.focus({ preventScroll: true });
+				}
 			});
 		}
 	});
@@ -226,7 +234,11 @@
 	function navigateCardCursor(currentIndex: number, direction: Direction) {
 		const allCards = Array.from(document.querySelectorAll<HTMLElement>('.album-card'));
 		if (allCards.length === 0) return;
-		const rects = allCards.map((c) => c.getBoundingClientRect());
+		// offsetTop/offsetLeft give layout positions unaffected by CSS transforms
+		// (hover applies translateY(-4px), which would corrupt getBoundingClientRect()).
+		const rects = allCards.map((c) => ({
+			left: c.offsetLeft, top: c.offsetTop, width: c.offsetWidth, height: c.offsetHeight
+		}));
 		const targetIndex = navigateCursor(rects, currentIndex, direction);
 		if (targetIndex !== null) {
 			allCards[targetIndex].focus();
@@ -292,6 +304,7 @@
 		<div class="albums">
 			{#each albums as album (album.slug)}
 				<a href={resolve(`/albums/${album.slug}`)} class="album-card"
+					data-slug={album.slug}
 					onkeydown={handleCardKeydown}
 				>
 					{#if album.cover}
