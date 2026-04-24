@@ -24,6 +24,7 @@
 		tryStoredAlbumPasswords
 	} from '$lib/crypto';
 	import { footerReady } from '$lib/stores';
+	import { navigateCursor, type Direction } from '$lib/navigation';
 	import Lock from 'lucide-svelte/icons/lock';
 	import Image from 'lucide-svelte/icons/image';
 	import CameraOff from 'lucide-svelte/icons/camera-off';
@@ -222,10 +223,32 @@
 		return true;
 	}
 
+	function navigateCardCursor(currentIndex: number, direction: Direction) {
+		const allCards = Array.from(document.querySelectorAll<HTMLElement>('.album-card'));
+		if (allCards.length === 0) return;
+		const rects = allCards.map((c) => c.getBoundingClientRect());
+		const targetIndex = navigateCursor(rects, currentIndex, direction);
+		if (targetIndex !== null) {
+			allCards[targetIndex].focus();
+			allCards[targetIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+		}
+	}
+
 	function handleCardKeydown(e: KeyboardEvent) {
+		// space bar opens album (like enter)
 		if (e.key === ' ') {
 			e.preventDefault();
 			(e.currentTarget as HTMLElement).click();
+			return;
+		}
+
+		// arrow keys nav between albums
+		if (!e.key.startsWith('Arrow')) return;
+		e.preventDefault();
+		const allCards = Array.from(document.querySelectorAll<HTMLElement>('.album-card'));
+		const currentIndex = allCards.indexOf(e.currentTarget as HTMLElement);
+		if (currentIndex !== -1) {
+			navigateCardCursor(currentIndex, e.key.slice(5).toLowerCase() as 'left' | 'right' | 'up' | 'down');
 		}
 	}
 
