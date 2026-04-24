@@ -114,6 +114,8 @@ echo "Pass 1 — build files at root (expect present):"
 check_present "index.html"                        "index.html"
 check_present "favicon.ico"                       "favicon.ico"
 check_present ".htaccess"                         ".htaccess"
+check_present "sitemap.xml"                       "sitemap.xml"
+check_present "robots.txt"                        "robots.txt"
 
 echo ""
 echo "Pass 1 — pre-rendered album HTML re-included via --include \"albums/*.html\":"

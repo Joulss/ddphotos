@@ -8,7 +8,7 @@ export const GET: RequestHandler = async ({ fetch }) => {
 	const config: SiteConfig = await res.json();
 	const allow = config.allowCrawling === true;
 	const body = allow
-		? `User-agent: *\nAllow: /\nSitemap: ${config.siteUrl}/albums/sitemap.xml\n`
+		? `User-agent: *\nAllow: /\nSitemap: ${config.siteUrl}/sitemap.xml\n`
 		: `User-agent: *\nDisallow: /\n`;
 
 	return new Response(body, {

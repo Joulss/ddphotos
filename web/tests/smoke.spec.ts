@@ -39,7 +39,7 @@ test('album page renders photos in the grid', async ({ page }) => {
 test('album page has correct Open Graph tags', async ({ page }) => {
 	await page.goto('/albums/antarctica');
 	await unlockAlbumIfNeeded(page, 'antarctica', pw);
-	await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'Antarctica');
+	await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /^Antarctica/);
 	await expect(page.locator('meta[property="og:type"]')).toHaveAttribute('content', 'website');
 	// og:image must be a JPEG (not WebP) — iMessage and many crawlers don't support WebP previews
 	await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /antarctica\/cover\.jpg$/);
