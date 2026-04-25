@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/dougdonohoe/ddphotos/actions/workflows/ci.yml/badge.svg)](https://github.com/dougdonohoe/ddphotos/actions)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Demo](https://img.shields.io/badge/Demo-sample.donohoe.info-blue)](https://sample.donohoe.info)
+[![Demo](https://img.shields.io/badge/Demo-ddphotos.donohoe.info-blue)](https://ddphotos.donohoe.info)
 
 ## Motivation
 
@@ -213,7 +213,7 @@ There are three primary configuration files involved in creating a site:
 
 The `config` directory contains an example of each file which serves as its
 detailed documentation.  The `sample/config` files are a working 
-example that drives our sample photo album seen at [sample.donohoe.info](https://sample.donohoe.info).
+example that drives our sample photo album seen at [ddphotos.donohoe.info](https://ddphotos.donohoe.info).
 
 The `config` directory is the default assumed by many commands, so feel free to put 
 your config files there. Just copy the examples and edit them:
