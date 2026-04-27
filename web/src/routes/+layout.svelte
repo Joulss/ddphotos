@@ -36,6 +36,7 @@
 	const builtOn = formatBuildTime(import.meta.env.VITE_BUILD_TIME);
 	const gitDescribe = import.meta.env.VITE_GIT_DESCRIBE as string;
 	const gitBranch = import.meta.env.VITE_GIT_BRANCH as string;
+	const dockerImage = import.meta.env.VITE_DOCKER_IMAGE;
 	const gitRepoSlug = import.meta.env.VITE_GIT_REPO_SLUG as string;
 	const gitRepoUrl = import.meta.env.VITE_GIT_REPO_URL as string;
 	const showBranch = gitBranch && gitBranch !== 'main';
@@ -88,7 +89,11 @@
 	</div>
 	{@render children()}
 	<footer class:ready={!pageEncrypted || $footerReady}>
-		<div>Copyright © {data.siteConfig?.copyrightYear}-{new Date().getFullYear()}. {data.siteConfig?.copyrightOwner}.</div>
+		<div>{#if data.siteConfig?.copyrightYear && data.siteConfig.copyrightYear < new Date().getFullYear()}
+				Copyright © {data.siteConfig.copyrightYear}-{new Date().getFullYear()}. {data.siteConfig?.copyrightOwner}.
+			{:else}
+				Copyright © {new Date().getFullYear()}. {data.siteConfig?.copyrightOwner}.
+			{/if}</div>
 		<div class="built-with">
 			<button class="about-btn" onclick={openAbout} aria-label="About this site"><Info size={16} aria-hidden="true" /></button>
 			Built with joy by <a class="footer-link" href="https://github.com/dougdonohoe/ddphotos" target="_blank" rel="noopener">DD Photos</a>.
@@ -105,6 +110,10 @@
 				<dl class="modal-body">
 					<dt>Built</dt>
 					<dd>{builtOn}</dd>
+					{#if dockerImage}
+						<dt>Image</dt>
+						<dd>{dockerImage}</dd>
+					{/if}
 					<dt>Version</dt>
 					<dd>{gitDescribe}</dd>
 					{#if showBranch}

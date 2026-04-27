@@ -1,0 +1,67 @@
+# ddphotos configuration
+# See https://github.com/dougdonohoe/ddphotos for full documentation.
+#
+# Define bases pointing to where your source photos live. The ddphotos wrapper
+# script reads these paths and mounts them automatically into Docker.
+#
+# Examples:
+#
+#   bases:
+#     dropbox: /Users/anseladams/Dropbox/Vacations   # Dropbox or iCloud folder
+#     t7: /T7/Photos                                 # external drive
+#
+# Then reference a base in each album:
+#
+#   albums:
+#     - slug: hawaii-2024
+#       title: Hawaii 2024
+#       base: dropbox
+#       source: hawaii-2024   # subfolder under the base path
+#
+# Once you have edited this file, run:
+#   ./ddphotos photogen
+#   ./ddphotos run
+#   ./ddphotos build
+#   ./ddphotos serve
+
+settings:
+  id: my-photos
+  site_name: My Photos
+  site_url: https://photos.yourdomain.com
+  site_description: My personal photo gallery
+  copyright_owner: Your Name
+  copyright_year: 2026
+  allow_crawling: false
+  descriptions: description.txt
+  css: custom.css
+  passwords: passwords.yaml
+  site_title_html: >-
+    My Photos
+  site_subtitle_html: >-
+    A personal photo gallery.
+  site_overview_html: >-
+    Welcome to my <span class="accent">photo gallery</span>.
+  hero:
+    image: /docker/hero.webp
+    crop: center
+
+# Uncomment and edit bases to point to your photo directories.
+# Here are two examples:
+#
+#bases:
+#  dropbox: /Users/anseladams/Dropbox/Photos
+#  t7: /T7/Photos
+
+albums:
+  - slug: temporary
+    name: Replace Me
+    source: /ddphotos-init
+    cover: 2024-The-Way-14.jpg
+
+  - slug: secret
+    name: Secret
+    source: /ddphotos-secret
+
+  - slug: empty
+    name: Empty
+    source: /ddphotos-empty
