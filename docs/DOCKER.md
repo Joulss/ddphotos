@@ -26,18 +26,18 @@ cd ~/my-ddphotos
 
 ### 3. Build your own site
 
-1. Edit `config/albums.yaml` to define your albums (see [Configuration](../README.md#configuration))
+1. Edit `config/albums.yaml` to define your albums (see [Configuration](CONFIGURATION.md) for details)
 2. Repeat: `photogen` → `run` / `build` → `serve`
 
 ### 4. Deploy
 
-Configure `config/site.env` for rsync or S3, then:
+Configure `config/site.env` for rsync or S3 (see [site.env](CONFIGURATION.md#siteenv)), then:
 
 ```bash
 ./ddphotos deploy
 ```
 
-See [Deployment](../README-DEV.md#deployment) for full setup details.
+See [Deployment](DEPLOY.md) for full setup details.
 
 ### 5. Install the `ddphotos` wrapper script
 
@@ -91,7 +91,7 @@ flags, use `--`:
 ddphotos photogen -- -hero-only
 ```
 
-See [CLI Flags](../README-DEV.md#cli-flags) for all flags.
+See [CLI Flags](PHOTOGEN.md#cli-flags) for all flags.
 
 ### `run`
 
@@ -127,7 +127,7 @@ Requires `config/site.env`.
 ddphotos deploy
 ```
 
-See [Deployment](../README-DEV.md#deployment) for full setup details.
+See [Deployment](DEPLOY.md) for full setup details.
 
 ### `upgrade`
 
@@ -199,15 +199,15 @@ After `init`, your ddphotos directory looks like this:
 
 ```
 my-ddphotos/
-  ddphotos          ← wrapper script
+  ddphotos           ← wrapper script
   config/
-    albums.yaml     ← album definitions and site settings
-    description.txt ← per-album descriptions
-    custom.css      ← optional CSS overrides
-    passwords.yaml  ← optional password protection
-    site.env        ← deploy credentials (not committed to git)
-  albums/           ← photogen output (generated, not edited)
-  build/            ← static site output (generated, not edited)
+    albums.yaml      ← album definitions and site settings
+    descriptions.txt ← per-album descriptions
+    custom.css       ← optional CSS overrides
+    passwords.yaml   ← optional password protection
+    site.env         ← deploy credentials (not committed to git)
+  albums/            ← photogen output (generated, not edited)
+  build/             ← static site output (generated, not edited)
 ```
 
 ---
