@@ -233,11 +233,9 @@ case "$cmd" in
         ;;
     version)
         echo "Script:         $SCRIPT_DIR/ddphotos"
+        echo "Image:          $IMAGE"
         if [ "${1:-}" = "--image" ]; then
-            echo "Image:          $IMAGE"
             docker run --rm "$IMAGE" version | sed 's/^/                  /'
-        else
-            echo "Image:       $IMAGE"
         fi
         echo "DD Photos dir:  $DDPHOTOS_DIR"
         echo "Config dir:     $CONFIG_HOST_DIR"

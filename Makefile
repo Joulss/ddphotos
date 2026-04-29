@@ -292,6 +292,6 @@ docker-build:
 		-f docker/Dockerfile .
 
 .PHONY: docker-push
-## docker-push: build multi-arch image and push to Docker Hub (tag: dev or vX.Y.Z+latest)
+## docker-push: build multi-arch image and push to Docker Hub (tag is dev or vX.Y.Z+latest)
 docker-push:
 	bin/docker-push.sh
