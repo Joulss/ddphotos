@@ -179,6 +179,11 @@ web-sanity-test:
 	bin/run-tests.sh --mode apache
 	bin/run-tests.sh --mode apache --passwords sample/config/passwords-all.yaml
 
+.PHONY: gen-deploy-tree
+## gen-deploy-tree: regenerate docs/deploy-tree.svg (colored directory tree for DEPLOY.md)
+gen-deploy-tree:
+	.venv/bin/python3 bin/gen-deploy-tree.py
+
 .PHONY: web-screenshots
 ## web-screenshots: capture screenshots and regenerate composite — requires a running server on port 8080
 web-screenshots:
@@ -220,6 +225,11 @@ sample-demo: sample-photogen-demo
 ## sample-build: build web app using sample config
 sample-build:
 	$(MAKE) web-npm-build
+
+.PHONY: sample-export
+## sample-export: create export/<site-id>/ with symlinks for local serving
+sample-export:
+	@bin/export.sh
 
 .PHONY: sample-test-apache
 ## sample-test-apache: run routing tests against local Apache Docker container on port 8082 (starts/stops Docker automatically)
