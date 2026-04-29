@@ -134,3 +134,29 @@ uv pip install -r requirements.txt
 
 The `.venv/` directory is git-ignored. The `make web-screenshots` target calls
 `.venv/bin/python3` directly, so no manual activation is needed.
+
+## Docker Notes
+
+To build the DD Photos Docker `ddphotos` image for testing locally:
+
+```bash
+make docker-build
+```
+
+To quickly test it out:
+
+```bash
+rm -rf /tmp/my-ddphotos
+mkdir -p /tmp/my-ddphotos
+docker run --rm -v /tmp/my-ddphotos:/ddphotos ddphotos init
+/tmp/my-ddphotos/ddphotos photogen
+/tmp/my-ddphotos/ddphotos run
+```
+
+Visit [http://localhost:5173/](http://localhost:5173/).
+
+To install `ddphotos` in `~/.localbin`:
+
+```bash
+docker run --rm -v ~/.local/bin:/ddphotos ddphotos init --script-only
+```

@@ -146,10 +146,10 @@ ddphotos version
 ```
 
 ```
-Script:      /Users/you/.local/bin/ddphotos
+Script:      /Users/anseladams/.local/bin/ddphotos
 Image:       dougdonohoe/ddphotos:v1.2.0
-Albums dir:  /Users/you/my-ddphotos
-Config dir:  /Users/you/my-ddphotos/config
+Albums dir:  /Users/anseladams/my-ddphotos
+Config dir:  /Users/anseladams/my-ddphotos/config
 Site ID:     my-photos
 ```
 
@@ -160,12 +160,12 @@ ddphotos version --image
 ```
 
 ```
-Script:      /Users/you/.local/bin/ddphotos
+Script:      /Users/anseladams/.local/bin/ddphotos
 Image:       dougdonohoe/ddphotos:v1.2.0
                Version:  v1.2.0
                Git:      v1.2.0-0-gabcdef1
-Albums dir:  /Users/you/my-ddphotos
-Config dir:  /Users/you/my-ddphotos/config
+Albums dir:  /Users/anseladams/my-ddphotos
+Config dir:  /Users/anseladams/my-ddphotos/config
 Site ID:     my-photos
 ```
 
