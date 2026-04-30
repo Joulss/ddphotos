@@ -171,6 +171,35 @@ To install `ddphotos` in `~/.localbin`:
 docker run --rm -v ~/.local/bin:/ddphotos ddphotos init --script-only
 ```
 
+## Docker Push
+
+Pushing a multi-arch image to Docker Hub is automated via the GitHub Actions workflow
+`.github/workflows/docker-release.yml`, which triggers whenever a version tag (e.g. `v1.2.3`)
+is pushed. It calls `bin/docker-push.sh --doit` and publishes both `:vX.Y.Z` and `:latest` tags.
+
+You can also push manually:
+
+```bash
+make docker-push
+```
+
+### Required GitHub Actions Secrets
+
+The workflow requires two repository secrets. Run these from inside the repo directory
+(secrets are repo-specific):
+
+```bash
+gh secret set DOCKERHUB_USERNAME --body "dougdonohoe"
+gh secret set DOCKERHUB_TOKEN   # prompts for value — keeps token out of shell history
+```
+
+To generate the `DOCKERHUB_TOKEN`:
+
+1. Log in to [hub.docker.com](https://hub.docker.com)
+2. Account Settings → Personal access tokens → Generate new token
+3. Set access to **Read, Write** (Write is required to push images; Admin is not needed)
+4. Copy the token and paste it when `gh secret set DOCKERHUB_TOKEN` prompts you
+
 ## Project History
 
 Much of this project was built with Claude Code. See [HISTORY.md](history/HISTORY.md)
