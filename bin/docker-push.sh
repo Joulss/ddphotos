@@ -58,9 +58,11 @@ docker buildx build \
     --push \
     .
 
-# always pull what we just built
-echo ""
-docker pull "$IMAGE_TAG"
+# pull what we just built (skipped in CI — runner is ephemeral)
+if [ "${CI}" != "true" ]; then
+    echo ""
+    docker pull "$IMAGE_TAG"
+fi
 
 echo ""
 echo "Done: https://hub.docker.com/r/$REPO/tags"
