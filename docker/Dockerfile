@@ -69,6 +69,8 @@ RUN chmod +x /docker/*.sh
 COPY docker/init/ /docker/init/
 COPY docker/hero.webp /docker/hero.webp
 COPY sample/source/theway/2024-The-Way-14.jpg /ddphotos-init/
+COPY sample/source/theway/2024-The-Way-20.jpg /ddphotos-init/
+COPY sample/source/theway/2024-The-Way-24.jpg /ddphotos-init/
 COPY sample/source/theway/2024-The-Way-21.jpg /ddphotos-secret/
 RUN echo "2024-The-Way-21 You found the secret photo!" > /ddphotos-secret/photogen.txt
 RUN mkdir -p /ddphotos-empty
