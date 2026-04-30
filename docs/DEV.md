@@ -170,3 +170,8 @@ To install `ddphotos` in `~/.localbin`:
 ```bash
 docker run --rm -v ~/.local/bin:/ddphotos ddphotos init --script-only
 ```
+
+## Project History
+
+Much of this project was built with Claude Code. See [HISTORY.md](history/HISTORY.md)
+for a detailed session log.
