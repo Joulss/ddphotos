@@ -58,5 +58,9 @@ docker buildx build \
     --push \
     .
 
+# always pull what we just built
+echo ""
+docker pull "$IMAGE_TAG"
+
 echo ""
 echo "Done: https://hub.docker.com/r/$REPO/tags"
