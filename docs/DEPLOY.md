@@ -17,7 +17,7 @@ It is important to understand that the web root is assembled from two independen
 | `build/<site-id>/`  | SvelteKit output: HTML shell, JS/CSS bundles, pre-rendered `albums/*.html` pages | web root `/`        |
 | `albums/<site-id>/` | photogen output: WebP images, JSON indexes, hero images, `sitemap.xml`           | web root `/albums/` |
 
-![Web root assembly](deploy-tree.svg)
+![Web root assembly](deploy-tree.png)
 
 **NOTE**:  If passwords are on, you might see `albums.enc.json`, `html.enc.json`, or `index.enc.json` files.
 

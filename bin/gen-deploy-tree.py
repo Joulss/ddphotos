@@ -11,6 +11,7 @@ Requires: rich  (uv pip install rich)
 """
 
 import re
+import subprocess
 from pathlib import Path
 from rich.align import Align
 from rich.console import Console
@@ -21,7 +22,8 @@ from rich.text import Text
 from rich.tree import Tree
 
 REPO_ROOT = Path(__file__).parent.parent
-OUTPUT    = REPO_ROOT / "docs" / "deploy-tree.svg"
+OUTPUT     = REPO_ROOT / "docs" / "deploy-tree.svg"
+OUTPUT_PNG = OUTPUT.with_suffix(".png")
 
 # ── Color palette ─────────────────────────────────────────────────────────────
 
@@ -199,3 +201,5 @@ svg = console.export_svg(theme=LIGHT_THEME)
 svg = strip_chrome(svg)
 OUTPUT.write_text(svg)
 print(f"Written: {OUTPUT}")
+subprocess.run(["rsvg-convert", "-f", "png", "-o", str(OUTPUT_PNG), str(OUTPUT)], check=True)
+print(f"Written: {OUTPUT_PNG}")
