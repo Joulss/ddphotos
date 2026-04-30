@@ -10,7 +10,8 @@ use the same files — only the path conventions differ.
 | `site.env`         | no       | Deploy credentials (never committed)                    |
 
 **Docker mode:** `ddphotos init` creates a `config/` directory with starter versions of
-all three files, ready to edit directly — no copying needed.
+the first two, ready to edit directly — no copying needed (you'll create a `site.env` when
+you are ready to deploy).
 
 **Developer mode:** The repo's `config/` directory contains example files. Copy and edit
 them to get started:
@@ -21,7 +22,7 @@ cp config/descriptions.example.txt config/descriptions.txt
 cp config/site.example.env config/site.env
 ```
 
-The `sample/config/` files are a working example that drives the demo site at
+A good reference are the `sample/config/` files that drives the demo site at
 [ddphotos.donohoe.info](https://ddphotos.donohoe.info).
 
 ---
