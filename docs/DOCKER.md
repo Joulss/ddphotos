@@ -61,7 +61,7 @@ docker run --rm -v ~/bin:/ddphotos dougdonohoe/ddphotos init --script-only
 ```
 
 If you have `ddphotos` on the path and the `ddphotos` repo checked out under `~/work`, you
-can use the script to photogen and run the [sample site](https://ddphotos.donohoe.info/):
+can use the script to photogen and run the [sample site↗](https://ddphotos.donohoe.info/):
 
 ```bash
 ddphotos --dir ~/work/ddphotos --config-dir ~/work/ddphotos/sample/config photogen

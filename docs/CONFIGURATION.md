@@ -23,7 +23,7 @@ cp config/site.example.env config/site.env
 ```
 
 A good reference are the `sample/config/` files that drives the demo site at
-[ddphotos.donohoe.info](https://ddphotos.donohoe.info).
+[ddphotos.donohoe.info↗](https://ddphotos.donohoe.info).
 
 ---
 
