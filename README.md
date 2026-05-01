@@ -82,8 +82,8 @@ the web app uses.
 That's it.  You can now view your photo albums on your machine using the dev server.
 
 Finally, there is a build step which creates a static site that can easily be
-deployed to a machine that has a web server (like Apache or nginx) or to AWS S3.
-No code runs on a server.  No database is needed.
+deployed to a machine that has a web server (like Apache or nginx), to AWS S3,
+or to any static hosting service. No code runs on a server.  No database is needed.
 It's just HTML, CSS, JavaScript and your (resized) photos.
 
 ## Key Features
