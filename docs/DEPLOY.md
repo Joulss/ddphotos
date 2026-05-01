@@ -95,9 +95,15 @@ export.sh --site-id <site-id> --copy
 
 ## Apache + rsync
 
-In this scenario, traffic is handled by CloudFront, which filters
-requests through a WAFv2 web ACL before forwarding clean traffic to an Apache
-origin on any SSH-accessible server.
+In this scenario, the site is rsynced to any SSH-accessible server running Apache.
+That's the only hard requirement.
+
+```mermaid
+flowchart LR
+    User -->|HTTPS| Apache["Server / Apache"]
+```
+
+Optionally, you can place CloudFront (and a WAFv2 web ACL) in front of the origin:
 
 ```mermaid
 flowchart LR
@@ -106,15 +112,17 @@ flowchart LR
     CF -->|HTTP| Apache["Server / Apache"]
 ```
 
-The WAF (Web Application Firewall) inspects every incoming request and blocks
-suspicious or malicious traffic (things like bots or known bad IP addresses)
-before it ever reaches the origin server.
+The CDN (Content Delivery Network) caches content at edge locations around the world
+so visitors get fast load times regardless of where they are, and the origin server
+handles far less traffic.
 
-The CDN (Content Delivery Network) caches content at edge locations around
-the world so visitors get fast load times regardless of where they are,
-and the origin server handles far less traffic.
+The WAF (Web Application Firewall) inspects every incoming request and blocks suspicious
+or malicious traffic (bots, known bad IPs, common attack patterns) before it reaches the
+origin. Adding a WAF is recommended whenever the server is internet-facing — it's the
+first line of defense against automated abuse.
 
-The site is rsynced to the origin server; CloudFront caches and serves it to visitors.
+If `CLOUDFRONT_ID` is set in `config/site.env`, the deploy script automatically
+invalidates the CloudFront cache after each deploy.
 
 ## S3 + CloudFront
 
