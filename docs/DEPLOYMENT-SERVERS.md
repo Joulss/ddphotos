@@ -3,8 +3,8 @@
 DD Photos uses extensionless URLs (`/albums/patagonia`), photo permalink paths
 (`/albums/patagonia/15`), and an SPA fallback for unknown routes. Web servers don't handle
 any of these by default — each server needs URL rewriting rules to map these paths to the
-correct `.html` files. The configurations below provide those rules for Apache, nginx, and
-CloudFront.
+correct `.html` files. The configurations below provide those rules for Apache, nginx,
+CloudFront, Cloudflare Pages, and Surge.
 
 ## Local Testing with Python
 
@@ -95,7 +95,7 @@ For a SvelteKit `adapter-static` site like DD Photos, a function is **required**
   the lightbox to photo 42 via the URL hash
 - **Domain redirects** — apex-to-www (`example.com` → `www.example.com`) and any other domain consolidation
 
-Here is a minimal function for a SvelteKit-based photo site:
+Here is a minimal function for a SvelteKit-based photo site (see also the [Cloudflare Pages Worker](#cloudflare-pages-worker) below, which handles the same routing for Cloudflare deployments):
 
 ```javascript
 function handler(event) {
@@ -129,4 +129,47 @@ function handler(event) {
 
     return request;
 }
+```
+
+## Cloudflare Pages Worker
+
+When deploying to [Cloudflare Pages↗](https://pages.cloudflare.com), a `_worker.js` in the
+export root handles URL routing — the equivalent of the CloudFront Function above.
+
+The worker handles three cases not covered natively by Cloudflare Pages:
+
+- **Photo permalinks** — `/albums/slug/42` → serves `/albums/slug.html` via `env.ASSETS.fetch()`,
+  keeping the URL unchanged so the JS can read the photo index and open the lightbox
+- **Photo permalink trailing slash** — `/albums/slug/42/` → 308 redirect to `/albums/slug/42`
+- **Root-level SPA fallback** — unknown single-segment paths (e.g. `/nope`) → serves `index.html`
+  so the client-side router can handle 404 display
+
+All other routing — extensionless album URLs, static assets, `404.html` — is handled natively
+by Cloudflare Pages.
+
+`ddphotos export --cloudflare` (or `export.sh --cloudflare`) copies `docker/cloudflare-worker.js`
+into the export root as `_worker.js` automatically.
+
+To verify a Cloudflare Pages deployment with `bin/test-photos-server.sh`, pass `--cloudflare`
+so the script expects 308 (not 301) for trailing slash redirects and HTTPS in Location headers:
+
+```bash
+bin/test-photos-server.sh --remote https://your-site.pages.dev --cloudflare
+```
+
+## Surge
+
+[Surge↗](https://surge.sh) uses a `200.html` SPA fallback for all unmatched paths. There is
+no server-side routing, so some behaviors differ from Apache/nginx/Cloudflare Pages:
+
+- **Bad album slugs return 200** — `/albums/doesnotexist` returns the SPA shell (200) instead
+  of the custom 404 page. The SvelteKit router handles the 404 display client-side.
+- **No photo permalink trailing slash redirect** — `/albums/slug/1/` is handled by the SPA
+  router rather than a server-side redirect; the page still loads correctly.
+
+To verify a Surge deployment with `bin/test-photos-server.sh`, pass `--surge` so the script
+expects HTTPS in Location headers and treats the above behaviors as expected rather than failures:
+
+```bash
+bin/test-photos-server.sh --remote https://your-site.surge.sh --surge
 ```

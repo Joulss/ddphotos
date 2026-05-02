@@ -4,10 +4,12 @@ set -e
 SITE_ID="${DDPHOTOS_SITE_ID:-my-photos}"
 EXPORT_DIR="/ddphotos/export/$SITE_ID"
 COPY=""
+CLOUDFLARE=""
 
 while [ "${1#--}" != "$1" ]; do
     case "$1" in
-        --copy) COPY=1; shift ;;
+        --copy)       COPY=1;          shift ;;
+        --cloudflare) CLOUDFLARE=1; shift ;;
         *) echo "Unknown option: $1" >&2; exit 1 ;;
     esac
 done
@@ -22,8 +24,6 @@ if [ ! -d "/ddphotos/build/$SITE_ID" ]; then
     exit 1
 fi
 
-/bin/rm -rf "$EXPORT_DIR"
-
 if [ -n "$COPY" ]; then
     LINK_DIR=$(mktemp -d)
     RELATIVE_LINKS=1 \
@@ -32,15 +32,20 @@ if [ -n "$COPY" ]; then
     DDPHOTOS_SITE_ID=$SITE_ID \
     /docker/setup-htdocs.sh "$LINK_DIR"
     mkdir -p "$EXPORT_DIR"
-    /bin/cp -rL "$LINK_DIR/." "$EXPORT_DIR/"
+    rsync -rLtv --delete "$LINK_DIR/" "$EXPORT_DIR/"
     /bin/rm -rf "$LINK_DIR"
 else
+    /bin/rm -rf "$EXPORT_DIR"
     mkdir -p "$EXPORT_DIR"
     RELATIVE_LINKS=1 \
     BUILD_ROOT=/ddphotos/build \
     ALBUMS_DIR=/ddphotos/albums/$SITE_ID \
     DDPHOTOS_SITE_ID=$SITE_ID \
     /docker/setup-htdocs.sh "$EXPORT_DIR"
+fi
+
+if [ -n "$CLOUDFLARE" ]; then
+    /bin/cp /docker/cloudflare-worker.js "$EXPORT_DIR/_worker.js"
 fi
 
 echo ""

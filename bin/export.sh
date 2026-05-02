@@ -9,10 +9,12 @@ BUILD_DIR="$REPO_ROOT/build"
 ALBUMS_DIR="$REPO_ROOT/albums"
 
 COPY=""
+CLOUDFLARE=""
 
 while [[ "${1:-}" == --* ]]; do
     case "$1" in
         --copy)       COPY=1;          shift ;;
+        --cloudflare) CLOUDFLARE=1; shift ;;
         --site-id)    SITE_ID="$2";    shift 2 ;;
         --build-dir)  BUILD_DIR="$2";  shift 2 ;;
         --albums-dir) ALBUMS_DIR="$2"; shift 2 ;;
@@ -39,7 +41,6 @@ if [ ! -d "$BUILD_DIR/$SITE_ID" ]; then
 fi
 
 EXPORT_DIR="$REPO_ROOT/export/$SITE_ID"
-/bin/rm -rf "$EXPORT_DIR"
 
 if [ -n "$COPY" ]; then
     LINK_DIR=$(mktemp -d)
@@ -48,14 +49,19 @@ if [ -n "$COPY" ]; then
     DDPHOTOS_SITE_ID="$SITE_ID" \
     "$REPO_ROOT/web/setup-htdocs.sh" "$LINK_DIR"
     mkdir -p "$EXPORT_DIR"
-    /bin/cp -rL "$LINK_DIR/." "$EXPORT_DIR/"
+    rsync -rLtv --delete "$LINK_DIR/" "$EXPORT_DIR/"
     /bin/rm -rf "$LINK_DIR"
 else
+    /bin/rm -rf "$EXPORT_DIR"
     mkdir -p "$EXPORT_DIR"
     BUILD_ROOT="$BUILD_DIR" \
     ALBUMS_DIR="$ALBUMS_DIR/$SITE_ID" \
     DDPHOTOS_SITE_ID="$SITE_ID" \
     "$REPO_ROOT/web/setup-htdocs.sh" "$EXPORT_DIR"
+fi
+
+if [ -n "$CLOUDFLARE" ]; then
+    /bin/cp "$REPO_ROOT/docker/cloudflare-worker.js" "$EXPORT_DIR/_worker.js"
 fi
 
 echo ""
