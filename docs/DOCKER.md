@@ -145,6 +145,38 @@ ddphotos decode --passwords config/passwords.yaml albums/my-photos/secret/index.
 Paths are resolved relative to the `--dir` directory (default: the `ddphotos` script
 location). Files outside that directory are mounted automatically.
 
+### `search-cover`
+
+Finds the original filename for a photo given its URL — useful for setting a cover image
+in `albums.yaml`. Pass any photo URL from your site (full-size or grid thumbnail):
+
+```bash
+ddphotos search-cover https://my-site.example.com/albums/banff-2002/full/0918bedf-2f7d-dedc-9e89-b99ec5bb2752.webp
+```
+
+Output:
+
+```
+Searching...
+  Album:  banff-2002
+  Index:  /ddphotos/albums/my-photos/banff-2002/index.json
+  Source: full/0918bedf-2f7d-dedc-9e89-b99ec5bb2752.webp
+
+Found:
+  id:         0918bedf-2f7d-dedc-9e89-b99ec5bb2752
+  sourcePath: /photos/banff-2002/IMG_1234.jpg
+  fileName:   IMG_1234.jpg
+
+Use for cover:
+  cover: IMG_1234.jpg
+```
+
+Use the `--site-id` flag to search a different site:
+
+```bash
+ddphotos --site-id other-site search-cover <url>
+```
+
 ### `run`
 
 Starts a Vite dev server at http://localhost:5173. Live-reloads on template/CSS changes.
@@ -276,6 +308,7 @@ These flags go before the command name and apply to all commands that need them:
 | `--site-id <id>`      | Override the site ID (normally read from `config/albums.yaml`)                                          |
 | `--site-env <path>`   | Path to a `site.env` file other than `<config-dir>/site.env`                                            |
 | `--non-interactive`   | Run `serve` and `run` without a TTY (no `-it` flag) — useful for scripted/CI contexts                   |
+| `--show-mounts`       | Print the Docker volume mounts before running the command — useful for debugging mount issues           |
 
 Example — using a separate source repo as the albums dir:
 
