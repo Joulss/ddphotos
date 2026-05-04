@@ -2,7 +2,7 @@
 
 DD Photos supports the following deployment approaches:
 
- * **Static** - via `export` script (for any compatible static-hosting service, e.g., [Surge↗](https://surge.sh), [Cloudflare Pages↗](https://pages.cloudflare.com))
+ * **Static** - via `export` script (for any compatible static-hosting service, e.g., [Cloudflare Pages↗](https://pages.cloudflare.com), [Surge↗](https://surge.sh))
  * **Apache via rsync** - via `deploy` script (for any SSH-accessible server)
  * **S3 + CloudFront** - via `deploy` script (fully serverless).
 
@@ -61,7 +61,7 @@ is used to create a root from the source `album` and `build` dirs.
 ```bash
 ./ddphotos photogen
 ./ddphotos build
-./ddphotos export        # uses symlinks
+./ddphotos export        # use symlinks
 ./ddphotos export --copy # do not use symlinks
 ```
 
@@ -75,28 +75,6 @@ Use the `bin/export.sh` script:
 export.sh --site-id <site-id>
 export.sh --site-id <site-id> --copy
 ```
-
-### Surge
-
-[Surge↗](https://surge.sh) is a simple, free alternative for hosting static sites. It works well with DD Photos sites.
-
-Assuming you have `surge` installed (`npm install --global surge`), in Docker mode:
-
-```bash
-./ddphotos export --copy
-./surge --domain my-unique-site.surge.sh export/my-photos
-```
-
-In developer mode:
-
-```bash
-export.sh --site-id <site-id> --copy
-./surge --domain my-unique-site.surge.sh export/<site-id>
-```
-
-The site will be at https://my-unique-site.surge.sh.
-
-See [Surge](DEPLOYMENT-SERVERS.md#surge) for routing behavior and known limitations.
 
 ### Cloudflare Pages
 
@@ -122,6 +100,29 @@ wrangler pages deploy --project-name my-unique-site export/<site-id>
 The first deploy creates the project automatically and assigns a URL of
 https://my-unique-site.pages.dev. See [Cloudflare Pages Worker](DEPLOYMENT-SERVERS.md#cloudflare-pages-worker)
 for how routing works.
+
+### Surge
+
+[Surge↗](https://surge.sh) is a simple, free alternative for hosting static sites.
+Export must use `--copy` since symlinks aren't followed.
+
+Assuming you have `surge` installed (`npm install --global surge`), in Docker mode:
+
+```bash
+./ddphotos export --copy
+./surge --domain my-unique-site.surge.sh export/my-photos
+```
+
+In developer mode:
+
+```bash
+export.sh --site-id <site-id> --copy
+./surge --domain my-unique-site.surge.sh export/<site-id>
+```
+
+The site will be at https://my-unique-site.surge.sh.
+
+See [Surge](DEPLOYMENT-SERVERS.md#surge) for routing behavior and known limitations.
 
 ## Apache + rsync
 

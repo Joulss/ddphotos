@@ -32,6 +32,21 @@ cd ~/my-ddphotos
 
 ### 4. Deploy
 
+**Quick option — [Cloudflare Pages↗](https://pages.cloudflare.com)** - free, unlimited bandwidth (requires
+[Node.js](http://nodejs.org/) and a [Cloudflare account](https://dash.cloudflare.com/login)):
+
+```bash
+# Install and login
+npm install -g wrangler --ignore-scripts
+wrangler login
+
+# Export and deploy
+./ddphotos export --cloudflare
+wrangler pages deploy --project-name my-unique-site export/my-photos
+```
+
+The site will be at https://my-unique-site.pages.dev.
+
 **Quick option — [Surge↗](https://surge.sh)** - free, one command, no server required (requires
 [Node.js](http://nodejs.org/)):
 
@@ -45,21 +60,6 @@ surge --domain my-unique-site.surge.sh export/my-photos
 ```
 
 The site will be at https://my-unique-site.surge.sh.
-
-**Quick option — [Cloudflare Pages↗](https://pages.cloudflare.com)** - free, unlimited bandwidth (requires
-[Node.js](http://nodejs.org/) and [Cloudflare account](https://dash.cloudflare.com/login)):
-
-```bash
-# Install and login
-npm install -g wrangler --ignore-scripts
-wrangler login
-
-# Export and deploy
-./ddphotos export --cloudflare
-wrangler pages deploy --project-name my-unique-site export/my-photos
-```
-
-The site will be at https://my-unique-site.pages.dev.
 
 **Production option** — configure `config/site.env` for rsync or S3
 (see [site.env](CONFIGURATION.md#siteenv)), then:
