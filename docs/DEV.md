@@ -165,15 +165,21 @@ docker run --rm -v /tmp/my-ddphotos:/ddphotos ddphotos init
 
 Visit [http://localhost:5173/](http://localhost:5173/).
 
-To install `ddphotos` in `~/.localbin`:
+To install the local `ddphotos` in `~/.localbin`:
 
 ```bash
 docker run --rm -v ~/.local/bin:/ddphotos ddphotos init --script-only
 ```
 
-See [Testing Docker](TESTING.md#testing-docker) for information on the full test suite.
+To run test suite:
 
-## Docker Push
+```bash
+make docker-test
+```
+
+See [Testing Docker](TESTING.md#testing-docker) for information on the test suite.
+
+### Docker Push
 
 Pushing a multi-arch image to Docker Hub is automated via the GitHub Actions workflow
 `.github/workflows/docker-release.yml`, which triggers whenever a version tag (e.g. `v1.2.3`)
@@ -185,7 +191,7 @@ You can also push manually:
 make docker-push
 ```
 
-### Required GitHub Actions Secrets
+#### Required GitHub Actions Secrets
 
 The workflow requires two repository secrets. Run these from inside the repo directory
 (secrets are repo-specific):
@@ -201,6 +207,27 @@ To generate the `DOCKERHUB_TOKEN`:
 2. Account Settings → Personal access tokens → Generate new token
 3. Set access to **Read, Write** (Write is required to push images; Admin is not needed)
 4. Copy the token and paste it when `gh secret set DOCKERHUB_TOKEN` prompts you
+
+### Docker Build Errors
+
+After doing many local builds, you may suddenly experience build failures and see messages like this:
+
+```bash
+W: GPG error: http://deb.debian.org/debian bookworm InRelease: At least one invalid signature was encountered.
+E: The repository 'http://deb.debian.org/debian bookworm InRelease' is not signed.
+
+error: failed to solve: failed to create temp dir: mkdir /tmp/xyz: no space left on device
+```
+
+This means Docker is running out of disk space. To reclaim space, run:
+
+```bash
+docker buildx prune # less aggressive
+docker system prune # get all the bytes possible
+```
+
+The amount of space is set in _Docker Desktop → Settings → Resources → Advanced → Disk usage limit_.
+
 
 ## Project History
 

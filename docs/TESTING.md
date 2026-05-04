@@ -203,7 +203,7 @@ make sample-s3-test
 
 ## Testing Docker
 
-`bin/docker-test.sh` exercises the full `ddphotos` Docker workflow end-to-end —
+The `bin/docker-test.sh` script exercises the full `ddphotos` Docker workflow end-to-end —
 from `init` through `photogen`, `run`, `build`, `serve`, `export`, and `version` —
 using the built-in sample photos that ship with the image.
 
@@ -217,12 +217,15 @@ The script runs the following steps in a fresh temp workspace:
 1. Builds the `ddphotos` Docker image via `make docker-build`
 2. Runs `init` and verifies the `ddphotos` script and config files are created
 3. Runs `photogen` on the bundled sample photos and verifies album output
-4. Starts the Vite dev server (`run`) and runs Playwright e2e tests against it
-5. Runs `build` and verifies the static site output
-6. Starts Apache (`serve`) and runs Playwright e2e tests + `bin/test-photos-server.sh` routing tests
-7. Tests `export` (symlink mode) and `export --copy` (all files resolved, no symlinks)
-8. Verifies `version` and `version --image` output — checks script path and image `Git:`/`Version:` fields
-9. Runs `init --script-only` and verifies only the script is installed (no `config/` or `albums/`)
+4. Runs `decode` on an encrypted album index and verifies the output, including files outside `DDPHOTOS_DIR` (via `--passwords` flag and embedded `pwFile` path)
+5. Runs `search-cover` against the decoded album and verifies the cover file is found
+6. Regression test: runs `decode` and `search-cover` with an external `--config-dir` (outside `DDPHOTOS_DIR`) to verify the config mount path is handled correctly
+7. Starts the Vite dev server (`run`) and runs Playwright e2e tests against it
+8. Runs `build` and verifies the static site output
+9. Starts Apache (`serve`) and runs Playwright e2e tests + `bin/test-photos-server.sh` routing tests
+10. Tests `export` (symlink mode), `export --copy` (all files resolved, no symlinks), and `export --cloudflare` (adds `_worker.js`)
+11. Verifies `version` and `version --image` output — checks script path and image `Git:`/`Version:` fields
+12. Runs `init --script-only` and verifies only the script is installed (no `config/` or `albums/`)
 
 Playwright tests skip assertions that depend on sample-site-specific albums (e.g. `antarctica`) when
 those albums are not present in the init site, so the full test suite runs cleanly against the
