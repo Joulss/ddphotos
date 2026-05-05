@@ -27,7 +27,7 @@ while [[ "${1:-}" == --?* ]]; do
         --site-env)        OPT_SITE_ENV="$2";     shift 2 ;;
         --non-interactive) NON_INTERACTIVE=true;  shift ;;
         --show-mounts)     SHOW_MOUNTS=true;      shift ;;
-        *)            break ;;
+        *) echo "Unknown option: $1" >&2; echo "Options must appear before the command. Run 'ddphotos help' for usage." >&2; exit 1 ;;
     esac
 done
 
@@ -52,7 +52,6 @@ if [ -z "$DDPHOTOS_SITE_ID" ]; then
         DDPHOTOS_SITE_ID=$(awk '/^settings:/{f=1} f && /[[:space:]]id:/{gsub(/.*id:[[:space:]]*/,""); print; exit}' "$ALBUMS_YAML")
     fi
 fi
-DDPHOTOS_SITE_ID="${DDPHOTOS_SITE_ID:-my-photos}"
 
 # ── Mount registry ─────────────────────────────────────────────────────────────
 # All Docker volume mounts go through add_mount(), which updates both the display
@@ -203,24 +202,32 @@ host_to_container() {
 
 # For commands that need a config, validate albums.yaml exists before launching Docker.
 case "$cmd" in
-    init|upgrade|help|version|decode|search-cover) ;;
+    init|upgrade|help|version) ;;
     *)
         if [ ! -f "$CONFIG_HOST_DIR/albums.yaml" ]; then
             echo "Error: no config found at $CONFIG_HOST_DIR/albums.yaml"
+            echo
             if [ "$DDPHOTOS_DIR" = "$SCRIPT_DIR" ]; then
-                echo "If ddphotos is installed in your PATH, specify your album directory:"
+                echo "'ddphotos' is installed in $SCRIPT_DIR."
+                echo "Since you are running 'ddphotos' standalone, you must specify the"
+                echo "DD Photos site directory (the one containing your 'config' dir):"
                 echo "  ddphotos --dir ~/my-ddphotos $cmd"
             else
-                echo "Run 'ddphotos init' to initialize the album directory."
+                echo "Run init to initialize the DD Photos site:"
+                echo "  ddphotos --dir $DDPHOTOS_DIR init"
             fi
             exit 1
         fi
         ;;
 esac
 
-# Remove upgrade.txt if we're already on that version (post-upgrade cleanup)
-if [ -f "$UPGRADE_FILE" ] && [ "$(cat "$UPGRADE_FILE")" = "$CURRENT_VERSION" ]; then
-    rm -f "$UPGRADE_FILE"
+# Remove upgrade.txt if we're already on or past that version (post-upgrade cleanup)
+if [ -f "$UPGRADE_FILE" ]; then
+    _stored=$(cat "$UPGRADE_FILE")
+    _newer=$(printf '%s\n%s' "$CURRENT_VERSION" "$_stored" | sort -V | tail -1)
+    if [ "$_newer" = "$CURRENT_VERSION" ]; then
+        rm -f "$UPGRADE_FILE"
+    fi
 fi
 
 check_for_update
@@ -378,7 +385,8 @@ case "$cmd" in
         echo "State dir:      $STATE_DIR"
         ;;
 
-    *)
+    help|*)
+        [ "$cmd" != "help" ] && { echo "Unknown command: '$cmd'" >&2; echo "" >&2; }
         echo "Usage: ddphotos [OPTIONS] {init|photogen|decode|search-cover|build|serve|run|export|deploy|upgrade} [args]"
         echo ""
         echo "Options (before command):"
@@ -409,6 +417,6 @@ case "$cmd" in
         echo ""
         echo "Tip: pass -- to photogen for full flag control:"
         echo "  ddphotos photogen -- -hero-only"
-        exit 1
+        [ "$cmd" = "help" ] || exit 1
         ;;
 esac

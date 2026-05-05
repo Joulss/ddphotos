@@ -6,12 +6,48 @@ if [ ! -d "/ddphotos" ]; then
     exit 1
 fi
 
+_mp=$(grep ' /ddphotos ' /proc/self/mountinfo 2>/dev/null | tail -1)
+_named=false
+# Linux: named volume path appears in mountinfo source
+echo "$_mp" | grep -q 'docker/volumes' && _named=true
+# Docker Desktop Mac: bind mounts use virtiofs/grpcfuse/osxfs; named volumes don't
+if [ "$_named" = "false" ] && [ -n "$_mp" ]; then
+    if grep -qE 'virtiofs|grpcfuse|osxfs' /proc/mounts 2>/dev/null; then
+        echo "$_mp" | grep -qE 'virtiofs|grpcfuse|osxfs' || _named=true
+    fi
+fi
+if [ "$_named" = "true" ]; then
+    echo "Error: /ddphotos is mounted as a Docker named volume, not a host directory." >&2
+    echo "Files written inside the container will not appear on your filesystem." >&2
+    echo "Use a bind mount with a relative or absolute path:" >&2
+    echo "  docker run -v ./my-dir:/ddphotos ddphotos init" >&2
+    exit 1
+fi
+
+SCRIPT_ONLY=""
+SITE_ID="my-photos"
+while [ "${1#--}" != "$1" ]; do
+    case "$1" in
+        --script-only) SCRIPT_ONLY=1; shift ;;
+        --site-id) SITE_ID="$2"; shift 2 ;;
+        *)
+            echo "Unknown option: $1" >&2
+            echo "" >&2
+            echo "Usage: ddphotos init [--script-only] [--site-id ID]" >&2
+            echo "" >&2
+            echo "  --script-only    Install just the 'ddphotos' wrapper script, skip config scaffold" >&2
+            echo "  --site-id ID     Site ID written into albums.yaml (default: my-photos)" >&2
+            exit 1
+            ;;
+    esac
+done
+
 # Always copy script
 cp /docker/ddphotos /ddphotos/ddphotos
 chmod +x /ddphotos/ddphotos
 
 # --script-only: install just the ddphotos wrapper script, skip config scaffold
-if [ "${1:-}" = "--script-only" ]; then
+if [ -n "$SCRIPT_ONLY" ]; then
     echo "Standalone 'ddphotos' script installed."
     echo
     echo "Usage with a separate albums directory:"
@@ -31,8 +67,9 @@ fi
 
 mkdir -p "$CONFIG" /ddphotos/albums /ddphotos/build /ddphotos/export
 cp /docker/init/* "$CONFIG"
+sed -i "s/__SITE_ID__/$SITE_ID/g" "$CONFIG/albums.yaml"
 
-echo "Initialized ddphotos!"
+echo "Initialized ddphotos (site-id=$SITE_ID)!"
 echo
 echo "Next steps - generate, run, build and serve the example site:"
 echo

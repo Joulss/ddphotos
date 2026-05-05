@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-SITE_ID="${DDPHOTOS_SITE_ID:-my-photos}"
+SITE_ID="${DDPHOTOS_SITE_ID:-site-id-undefined}"
 COPY=""
 CLOUDFLARE=""
 EXPORT_SITE_ID="$SITE_ID"
@@ -11,7 +11,16 @@ while [ "${1#--}" != "$1" ]; do
         --copy)             COPY=1;                shift ;;
         --cloudflare)       CLOUDFLARE=1;          shift ;;
         --export-site-id)   EXPORT_SITE_ID="$2";   shift 2 ;;
-        *) echo "Unknown option: $1" >&2; exit 1 ;;
+        *)
+            echo "Unknown option: $1" >&2
+            echo "" >&2
+            echo "Usage: ddphotos export [--copy] [--cloudflare] [--export-site-id ID]" >&2
+            echo "" >&2
+            echo "  --copy                 Resolve symlinks (required for static hosting)" >&2
+            echo "  --cloudflare           Add _worker.js for Cloudflare Pages photo permalinks" >&2
+            echo "  --export-site-id ID    Use export/ID/ as destination instead of export/<site-id>/" >&2
+            exit 1
+            ;;
     esac
 done
 

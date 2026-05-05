@@ -10,9 +10,9 @@ set -eo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 IMAGE="ddphotos"
-SITE_ID="my-photos"   # site-id created by 'init' template
-RUN_PORT=5173          # Vite host port; matches container default to keep port-mapping consistent
-SERVE_PORT=8090        # Apache host port (maps to container port 80; avoids conflicts with run-tests.sh)
+SITE_ID="docker-test-id"  # passed to init via --site-id, verified against albums.yaml after
+RUN_PORT=5173             # Vite host port; matches container default to keep port-mapping consistent
+SERVE_PORT=8090           # Apache host port (maps to container port 80; avoids conflicts with run-tests.sh)
 DO_BUILD=true
 TEST_DIR=""
 TEST_DIR2=""
@@ -116,7 +116,7 @@ fi
 step "Init"
 TEST_DIR=$(mktemp -d)
 chmod 755 "$TEST_DIR"
-docker run --rm -v "$TEST_DIR":/ddphotos "$IMAGE" init
+docker run --rm -v "$TEST_DIR":/ddphotos "$IMAGE" init --site-id "$SITE_ID"
 [ -x "$TEST_DIR/ddphotos" ]              || fail "ddphotos script not installed"
 [ -f "$TEST_DIR/config/albums.yaml" ]    || fail "config/albums.yaml not created"
 [ -f "$TEST_DIR/config/passwords.yaml" ] || fail "config/passwords.yaml not created"
@@ -124,11 +124,39 @@ docker run --rm -v "$TEST_DIR":/ddphotos "$IMAGE" init
 [ -f "$TEST_DIR/config/passwords.yaml" ] || fail "config/passwords.yaml not created"
 pass "ddphotos script and config created at $TEST_DIR"
 
+VALIDATE_SITE_ID=$(awk '/^settings:/{f=1} f && /[[:space:]]id:/{gsub(/.*id:[[:space:]]*/,""); print; exit}' "$TEST_DIR/config/albums.yaml")
+[ "$VALIDATE_SITE_ID" = "$SITE_ID" ] || fail "SITE_ID mismatch: expected '$SITE_ID', got '$VALIDATE_SITE_ID' in config/albums.yaml"
+pass "site ID '$SITE_ID' written correctly to config/albums.yaml"
+
 DDPHOTOS=("$TEST_DIR/ddphotos" --show-mounts)
 DDPHOTOS_QUIET=("$TEST_DIR/ddphotos")
 PASSWORDS_FILE="$TEST_DIR/config/passwords.yaml"
 
-# ── 3. Photogen ────────────────────────────────────────────────────────────────
+# ── 3. Error handling ─────────────────────────────────────────────────────────
+step "Error handling: commands reject unexpected args"
+out=$("${DDPHOTOS_QUIET[@]}" build extra-arg 2>&1) || true
+echo "$out" | grep -q "takes no arguments" || fail "build: expected 'takes no arguments' error"
+pass "build rejects unexpected args"
+
+out=$("$TEST_DIR/ddphotos" --non-interactive serve --foo 2>&1) || true
+echo "$out" | grep -q "takes no arguments" || fail "serve: expected 'takes no arguments' error"
+pass "serve rejects unexpected args"
+
+out=$("${DDPHOTOS_QUIET[@]}" export --no-such-flag 2>&1) || true
+echo "$out" | grep -q "Unknown option" || fail "export: expected 'Unknown option' error"
+pass "export rejects unknown flags"
+
+step "Error handling: unknown pre-command option"
+out=$("$TEST_DIR/ddphotos" --no-such-flag build 2>&1) || true
+echo "$out" | grep -q "Unknown option" || fail "ddphotos: expected 'Unknown option' for unknown pre-command flag"
+pass "ddphotos rejects unknown pre-command options"
+
+step "Help command"
+out=$("${DDPHOTOS_QUIET[@]}" help 2>&1)
+echo "$out" | grep -q "photogen" || fail "help: missing expected content"
+pass "help exits 0 and shows usage"
+
+# ── 4. Photogen ────────────────────────────────────────────────────────────────
 step "Photogen"
 "${DDPHOTOS[@]}" photogen
 [ -d "$TEST_DIR/albums/$SITE_ID" ] || fail "albums/$SITE_ID not created"
@@ -188,6 +216,7 @@ step "Decode + Search-Cover with external --config-dir"
 # the embedded pwFile path from /ddphotos/config/... to /ddphotos-config/...
 EXT_CONFIG_DIR=$(mktemp -d)
 /bin/cp "$TEST_DIR/config/passwords.yaml" "$EXT_CONFIG_DIR/"
+/bin/cp "$TEST_DIR/config/albums.yaml"    "$EXT_CONFIG_DIR/"
 
 # Write the modified enc.json to TEMP_DECODE_DIR (user-owned) — the album
 # directory inside TEST_DIR is root-owned (created by Docker) and unwritable.
@@ -284,6 +313,9 @@ echo "$version_image_out" | grep -qF "$TEST_DIR/ddphotos" || fail "version --ima
 echo "$version_image_out" | grep -q "Git:" || fail "version --image: missing Git: line"
 echo "$version_image_out" | grep -q "Version:.*dev" || fail "version --image: missing Version: dev"
 pass "version --image: Script path OK, Git: and Version: dev present"
+
+echo "$version_out" | grep -q "Site ID:.*$SITE_ID" || fail "version: Site ID does not show $SITE_ID"
+pass "version: Site ID '$SITE_ID' auto-detected from albums.yaml"
 
 # ── 12. Init --script-only ─────────────────────────────────────────────────────
 step "Init --script-only"

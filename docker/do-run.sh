@@ -1,8 +1,14 @@
 #!/bin/bash
 set -e
 
-SITE_ID="${DDPHOTOS_SITE_ID:-my-photos}"
+SITE_ID="${DDPHOTOS_SITE_ID:-site-id-undefined}"
 RUN_PORT="${RUN_PORT:-5173}"
+
+if [ $# -gt 0 ]; then
+    echo "Error: 'run' takes no arguments; got: $*" >&2
+    echo "Did you mean to pass options before the command? e.g.: ddphotos $* run" >&2
+    exit 1
+fi
 
 if [ ! -d "/ddphotos/albums/$SITE_ID" ]; then
     echo "Error: /ddphotos/albums/$SITE_ID not found. Run 'photogen' first."
@@ -26,5 +32,5 @@ cd /app/web
 set -m
 npm run dev -- --port "$RUN_PORT" &
 NPM_PID=$!
-trap "kill -- -$NPM_PID 2>/dev/null; exit 0" INT TERM
+trap 'kill -- -$NPM_PID 2>/dev/null; exit 0' INT TERM
 wait "$NPM_PID" || true
