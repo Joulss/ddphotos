@@ -32,7 +32,7 @@ wrangler pages deploy --project-name my-unique-site export/my-photos
 surge --domain my-unique-site.surge.sh export/my-photos
 ```
 
-See the [Docker](docs/DOCKER.md) page for full details including deploying via `rsync` or to S3.
+See the [Docker Mode](docs/DOCKER.md) page for full details including deploying via `rsync` or to S3.
 
 ## Motivation
 
@@ -151,7 +151,7 @@ These documents are primarily meant for users of DD Photos:
 
 | Document                                               | Description                                                                        |
 |--------------------------------------------------------|------------------------------------------------------------------------------------|
-| [Docker](docs/DOCKER.md)                               | Docker workflow: init, photogen, run, build, serve, deploy, upgrade                |
+| [Docker Mode](docs/DOCKER.md)                          | Docker workflow: init, photogen, run, build, serve, deploy, upgrade                |
 | [Configuration](docs/CONFIGURATION.md)                 | `albums.yaml`, `descriptions.txt`, `site.env`, and how config reaches the frontend |
 | [Photogen](docs/PHOTOGEN.md)                           | `photogen` CLI: flags, photo descriptions, recursive albums                        |
 | [Deployment](docs/DEPLOY.md)                           | Deployment via rsync and S3+CloudFront                                             |

@@ -1,4 +1,4 @@
-# Docker
+# Docker Mode
 
 The easiest way to run ddphotos is via Docker — no Go, Node, or libvips installation required.
 
@@ -89,6 +89,36 @@ can use the script to photogen and run the [sample site↗](https://ddphotos.don
 ddphotos --dir ~/work/ddphotos --config-dir ~/work/ddphotos/sample/config photogen
 ddphotos --dir ~/work/ddphotos --config-dir ~/work/ddphotos/sample/config run
 ```
+---
+
+## `ddphotos`
+
+Usage:
+
+```text
+ddphotos [options] [command] [args]
+```
+---
+
+### Pre-Command Options
+
+These flags go before the command name and apply to all commands that need them:
+
+| Flag                  | Description                                                                                             |
+|-----------------------|---------------------------------------------------------------------------------------------------------|
+| `--dir <path>`        | Directory containing your `config` and `albums` dirs (default: same directory as the `ddphotos` script) |
+| `--config-dir <path>` | Path to a config directory other than `<dir>/config`                                                    |
+| `--site-id <id>`      | Override the site ID (normally read from `config/albums.yaml`)                                          |
+| `--site-env <path>`   | Path to a `site.env` file other than `<config-dir>/site.env`                                            |
+| `--non-interactive`   | Run `serve` and `run` without a TTY (no `-it` flag) — useful for scripted/CI contexts                   |
+| `--show-mounts`       | Print the Docker volume mounts before running the command — useful for debugging mount issues           |
+
+Example — using a separate source repo as the albums dir:
+
+```bash
+ddphotos --dir ~/work/ddphotos --config-dir ~/work/ddphotos/sample/config photogen
+ddphotos --dir ~/work/ddphotos --site-id sample build
+```
 
 ---
 
@@ -136,7 +166,7 @@ flags, use `--`:
 ddphotos photogen -- -hero-only
 ```
 
-See [CLI Flags](PHOTOGEN.md#cli-flags) for all flags.
+See [photogen CLI Flags](PHOTOGEN.md#cli-flags) for all `photogen` flags.
 
 ### `run`
 
@@ -315,28 +345,6 @@ State dir:      /Users/anseladams/.config/ddphotos
 ```
 
 The `--dir`, `--config-dir`, and `--site-id` pre-command flags also work with `version`, making it useful for confirming which config a given invocation would use.
-
----
-
-## Pre-command Flags
-
-These flags go before the command name and apply to all commands that need them:
-
-| Flag                  | Description                                                                                             |
-|-----------------------|---------------------------------------------------------------------------------------------------------|
-| `--dir <path>`        | Directory containing your `config` and `albums` dirs (default: same directory as the `ddphotos` script) |
-| `--config-dir <path>` | Path to a config directory other than `<dir>/config`                                                    |
-| `--site-id <id>`      | Override the site ID (normally read from `config/albums.yaml`)                                          |
-| `--site-env <path>`   | Path to a `site.env` file other than `<config-dir>/site.env`                                            |
-| `--non-interactive`   | Run `serve` and `run` without a TTY (no `-it` flag) — useful for scripted/CI contexts                   |
-| `--show-mounts`       | Print the Docker volume mounts before running the command — useful for debugging mount issues           |
-
-Example — using a separate source repo as the albums dir:
-
-```bash
-ddphotos --dir ~/work/ddphotos --config-dir ~/work/ddphotos/sample/config photogen
-ddphotos --dir ~/work/ddphotos --site-id sample build
-```
 
 ---
 
