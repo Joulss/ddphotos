@@ -164,10 +164,10 @@ _deploy_site() {
     mkdir -p "$site_dir"
 
     if [ -z "$(ls -A "$site_dir")" ]; then
-        echo "docker: init"
+        echo "docker: init (create $site_dir)"
         docker run $PULL_FLAG --rm -v "$site_dir":/ddphotos "$IMAGE" init
     else
-        echo "docker: init --script-only (site dir exists)"
+        echo "docker: init --script-only ($site_dir exists)"
         docker run $PULL_FLAG --rm -v "$site_dir":/ddphotos "$IMAGE" init --script-only
     fi
 
