@@ -65,14 +65,16 @@ open at [localhost:5173](http://localhost:5173/).
 To try a site with password protection and custom CSS together in one step:
 
 ```bash
-make sample-demo
+make sample-demo-1
+make sample-demo-2
 ```
 
-This `photogen`'s the sample site with all albums password-protected and a custom CSS
+Demo #1 `photogen`'s the sample site with all albums password-protected and a custom CSS
 override applied, then launches the dev server. The password for the sample site is
 `allgood`; the Uganda album password is `gorilla`; the Antarctica password is
-`penguin`.  The CSS changes the font color
-to cyan and rounds the album card corners a bit more.
+`penguin`.  The CSS changes the font color to cyan and rounds the album card corners a bit more.
+
+Demo #2 is the same, but the site has no password, just the Uganda album.
 
 You can also build the static site and test it in Apache/nginx (requires Docker and
 assumes `photogen` has been run).
