@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 if [ ! -d "/ddphotos" ]; then
@@ -26,7 +26,7 @@ fi
 
 SCRIPT_ONLY=""
 SITE_ID="my-photos"
-while [ "${1#--}" != "$1" ]; do
+while [[ "${1:-}" == --* ]]; do
     case "$1" in
         --script-only) SCRIPT_ONLY=1; shift ;;
         --site-id) SITE_ID="$2"; shift 2 ;;
@@ -65,7 +65,7 @@ if [ -f "$CONFIG/albums.yaml" ]; then
     exit 1
 fi
 
-mkdir -p "$CONFIG" /ddphotos/albums /ddphotos/build /ddphotos/export
+mkdir -p "$CONFIG" "$DDPHOTOS_ALBUMS_DIR" /ddphotos/build /ddphotos/export
 cp /docker/init/* "$CONFIG"
 sed -i "s/__SITE_ID__/$SITE_ID/g" "$CONFIG/albums.yaml"
 
