@@ -303,14 +303,17 @@ docker-test:
 	bin/docker-test.sh
 
 .PHONY: ddphotos-install-dev
+## ddphotos-install-dev: install ddphotos script from local dev image into ~/.local/bin
 ddphotos-install-dev:
 	docker run --rm -v ~/.local/bin:/ddphotos ddphotos init --script-only
 
 .PHONY: ddphotos-install-prod
+## ddphotos-install-prod: install ddphotos script from Docker Hub image into ~/.local/bin
 ddphotos-install-prod:
 	docker run --rm -v ~/.local/bin:/ddphotos dougdonohoe/ddphotos:latest init --script-only
 
 .PHONY: ddphotos-patch
+## ddphotos-patch: patch ~/.local/bin/ddphotos script from local docker/ dir, preserving IMAGE= value
 ddphotos-patch:
 	@_img=$$(grep '^IMAGE=' ~/.local/bin/ddphotos); \
 	/bin/cp docker/ddphotos ~/.local/bin/ddphotos; \

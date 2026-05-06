@@ -165,10 +165,11 @@ docker run --rm -v /tmp/my-ddphotos:/ddphotos ddphotos init
 
 Visit [http://localhost:5173/](http://localhost:5173/).
 
-To install the local `ddphotos` in `~/.localbin`:
+To install `ddphotos` in `~/.local/bin`:
 
 ```bash
-docker run --rm -v ~/.local/bin:/ddphotos ddphotos init --script-only
+make ddphotos-install-dev # from local docker ddphotos (having run make docker-build)
+make ddphotos-install-prod # from prod docker dougdonohoe/ddphotos:latest
 ```
 
 To run test suite:
@@ -228,6 +229,19 @@ docker system prune # get all the bytes possible
 
 The amount of space is set in _Docker Desktop → Settings → Resources → Advanced → Disk usage limit_.
 
+## Static Site Examples
+
+Use `bin/deploy-sample-sites.sh` to deploy `init` and `sample` sites to Cloudflare and surge.
+
+* Surge sites
+  * Init: https://ddphotos-init.surge.sh (was https://ddphotos-test-docker.surge.sh/, now redirects)
+  * Sample: https://ddphotos-sample.surge.sh (was https://ddphotos-test-sample.surge.sh/, now redirects)
+* Cloudflare sites:
+  * Init: https://ddphotos-init.pages.dev
+  * Sample: https://ddphotos-sample.pages.dev
+  * Sample alternate: https://my-unique-site.pages.dev/
+
+Use `deploy-sample-sites.sh --verify` to run smoke tests against these sites
 
 ## Project History
 
