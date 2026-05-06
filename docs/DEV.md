@@ -234,12 +234,12 @@ The amount of space is set in _Docker Desktop → Settings → Resources → Adv
 Use `bin/deploy-sample-sites.sh` to deploy `init` and `sample` sites to Cloudflare and surge.
 
 * Surge sites
-  * Init: https://ddphotos-init.surge.sh (was https://ddphotos-test-docker.surge.sh/, now redirects)
-  * Sample: https://ddphotos-sample.surge.sh (was https://ddphotos-test-sample.surge.sh/, now redirects)
+  * Init: [ddphotos-init.surge.sh↗](https://ddphotos-init.surge.sh) (was [ddphotos-test-docker.surge.sh↗](https://ddphotos-test-docker.surge.sh/), now redirects)
+  * Sample: [ddphotos-sample.surge.sh↗](https://ddphotos-sample.surge.sh) (was [ddphotos-test-sample.surge.sh↗](https://ddphotos-test-sample.surge.sh/), now redirects)
 * Cloudflare sites:
-  * Init: https://ddphotos-init.pages.dev
-  * Sample: https://ddphotos-sample.pages.dev
-  * Sample alternate: https://my-unique-site.pages.dev/
+  * Init: [ddphotos-init.pages.dev↗](https://ddphotos-init.pages.dev)
+  * Sample: [ddphotos-sample.pages.dev↗](https://ddphotos-sample.pages.dev)
+  * Sample alternate: [my-unique-site.pages.dev↗](https://my-unique-site.pages.dev/)
 
 Use `deploy-sample-sites.sh --verify` to run smoke tests against these sites
 
