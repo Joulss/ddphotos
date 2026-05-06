@@ -184,8 +184,8 @@
 		display: flex;
 		gap: 0.3rem;
 		align-items: center;
-		border-radius: 20px;
-		padding: 3px 6px;
+		border-radius: 18px;
+		padding: 3px;
 	}
 
 	.top-controls.ready {
