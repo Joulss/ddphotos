@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { loadPasswords, unlockSiteIfNeeded } from './helpers';
+
+const pw = loadPasswords();
 
 test('privacy page loads and shows correct title', async ({ page }) => {
 	const config = await page.request.get('/albums/config.json').then((r) => r.json());
@@ -30,4 +33,29 @@ test('privacy page has working back link and ?clear link', async ({ page }) => {
 	await page.goto('/privacy');
 	await expect(page.locator('a[href="/"]', { hasText: 'Back to albums' })).toBeVisible();
 	await expect(page.locator('a[href="/?clear"]')).toBeVisible();
+});
+
+test('Back to albums from privacy restores scroll position', async ({ page }) => {
+	await page.goto('/');
+	await unlockSiteIfNeeded(page, pw);
+	await page.locator('.albums').waitFor();
+
+	// Scroll to the bottom of the home page.
+	await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+	const scrolledY = await page.evaluate(() => window.scrollY);
+
+	// Skip if the page isn't tall enough to scroll (degenerate test config).
+	if (scrolledY < 10) return;
+
+	// Navigate to privacy via the footer link.
+	await page.locator('a[href="/privacy"]').click();
+	await expect(page).toHaveURL('/privacy');
+
+	// Click Back to albums.
+	await page.locator('a[href="/"]', { hasText: 'Back to albums' }).click();
+	await page.locator('.albums').waitFor();
+
+	// Scroll must be restored, not reset to the top.
+	const restoredY = await page.evaluate(() => window.scrollY);
+	expect(restoredY).toBeGreaterThan(10);
 });

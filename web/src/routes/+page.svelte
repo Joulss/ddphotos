@@ -67,11 +67,14 @@
 			if (y > 0) pendingScroll = y;
 			pendingFocusSlug = from.url.pathname.split('/')[2] ?? null; // /albums/slug[/index]
 			// $effect below handles unhide once albums renders
+		} else if (y > 0) {
+			// Returning from a non-album page (e.g. /privacy) with saved scroll — restore it.
+			// $effect below handles unhide once albums renders
+			pendingScroll = y;
 		} else {
-			// Not returning from album — unhide (set in onMount) and optionally reset scroll
+			// Fresh navigation to home — unhide immediately, scroll already at top.
 			requestAnimationFrame(() => {
 				document.documentElement.style.visibility = '';
-				if (y > 0) window.scrollTo(0, 0);
 			});
 		}
 	});
