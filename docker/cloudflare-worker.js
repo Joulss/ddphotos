@@ -1,7 +1,7 @@
 // Cloudflare Pages Worker — handles URL routing for DD Photos static deployments.
 // Copied into the export root as _worker.js by `ddphotos export --cloudflare` (or export.sh --cloudflare).
 // Handles photo permalinks (/albums/slug/42 → /albums/slug.html), photo permalink trailing slash
-// redirects (308), and root-level SPA fallback (/nope → index.html).
+// redirects (308), and extensionless root-level paths (/ → index.html, /privacy → privacy.html).
 // See docs/DEPLOYMENT-SERVERS.md#cloudflare-pages-worker for details.
 export default {
     async fetch(request, env) {
@@ -22,11 +22,11 @@ export default {
             return env.ASSETS.fetch(newUrl.toString());
         }
 
-        // Root-level single-segment extensionless paths: /privacy → /privacy.html.
-        // Unknown paths (e.g. /nope) produce a 404 from ASSETS, which Cloudflare Pages
-        // resolves to 404.html.
+        // Root → index.html; other extensionless single-segment paths → path.html
+        // (e.g. /privacy → /privacy.html). Unknown paths produce a 404 from ASSETS.
         if (!path.includes('.') && path.indexOf('/', 1) === -1) {
-            return env.ASSETS.fetch(new URL(path + '.html', url.origin).toString());
+            const html = path === '/' ? '/index.html' : path + '.html';
+            return env.ASSETS.fetch(new URL(html, url.origin).toString());
         }
 
         return env.ASSETS.fetch(request);
