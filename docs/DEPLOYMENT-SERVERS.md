@@ -90,7 +90,8 @@ round-trip cost.
 For a SvelteKit `adapter-static` site like DD Photos, a function is **required** to handle:
 
 - **URL routing** — extensionless paths like `/albums/patagonia` map to `patagonia.html`; the root
-  `/` maps to `index.html`; unknown root-level paths fall back to `index.html` (SPA fallback)
+  `/` maps to `index.html`; other root-level paths like `/privacy` map to `privacy.html`; unknown
+  paths produce a 403/404 from S3, caught by `custom_error_response` and served as `404.html`
 - **Photo permalinks** — `/albums/slug/42` maps to `/albums/slug.html` so the album page can open
   the lightbox to photo 42 via the URL hash
 - **Domain redirects** — apex-to-www (`example.com` → `www.example.com`) and any other domain consolidation
@@ -115,15 +116,10 @@ function handler(event) {
         return request;
     }
 
-    // Extensionless paths
+    // Extensionless paths → pre-rendered .html page.
+    // Unknown paths produce a 403/404 from S3, caught by custom_error_response → 404.html.
     if (!uri.includes('.')) {
-        if (uri.indexOf('/', 1) === -1) {
-            // Root-level single-segment (/about, /unknown-page) → SPA fallback
-            request.uri = '/index.html';
-        } else {
-            // Deeper path (/albums/slug) → pre-rendered .html page
-            request.uri = uri + '.html';
-        }
+        request.uri = uri + '.html';
         return request;
     }
 
@@ -141,8 +137,8 @@ The worker handles three cases not covered natively by Cloudflare Pages:
 - **Photo permalinks** — `/albums/slug/42` → serves `/albums/slug.html` via `env.ASSETS.fetch()`,
   keeping the URL unchanged so the JS can read the photo index and open the lightbox
 - **Photo permalink trailing slash** — `/albums/slug/42/` → 308 redirect to `/albums/slug/42`
-- **Root-level SPA fallback** — unknown single-segment paths (e.g. `/nope`) → serves `index.html`
-  so the client-side router can handle 404 display
+- **Root-level extensionless paths** — single-segment paths like `/privacy` → serves `privacy.html`;
+  truly unknown paths (e.g. `/nope`) produce a 404 from `ASSETS`, which Cloudflare Pages resolves to `404.html`
 
 All other routing — extensionless album URLs, static assets, `404.html` — is handled natively
 by Cloudflare Pages.

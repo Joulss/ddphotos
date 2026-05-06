@@ -22,10 +22,11 @@ export default {
             return env.ASSETS.fetch(newUrl.toString());
         }
 
-        // Root-level SPA fallback: unknown single-segment paths (e.g. /nope) → index.html
-        // Mirrors the CloudFront Function behavior; client-side router handles the 404 display.
+        // Root-level single-segment extensionless paths: /privacy → /privacy.html.
+        // Unknown paths (e.g. /nope) produce a 404 from ASSETS, which Cloudflare Pages
+        // resolves to 404.html.
         if (!path.includes('.') && path.indexOf('/', 1) === -1) {
-            return env.ASSETS.fetch(new URL('/index.html', url.origin).toString());
+            return env.ASSETS.fetch(new URL(path + '.html', url.origin).toString());
         }
 
         return env.ASSETS.fetch(request);
