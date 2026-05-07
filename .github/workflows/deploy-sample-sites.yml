@@ -1,0 +1,45 @@
+name: Deploy Sample Sites
+
+# Triggered manually or automatically after a successful Docker Release.
+#
+# Required GitHub Actions secrets:
+#   CLOUDFLARE_API_TOKEN — Cloudflare API token with Cloudflare Pages: Edit permission
+#   CLOUDFLARE_ACCOUNT_ID — Cloudflare account ID
+#   SURGE_LOGIN — Surge account email
+#   SURGE_TOKEN — Surge token (run 'surge token' locally to obtain)
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Docker Release"]
+    types: [completed]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'web/.nvmrc'
+
+      - name: Install wrangler and surge
+        run: npm install -g wrangler --ignore-scripts && npm install -g surge
+
+      - name: Deploy sample sites
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SURGE_LOGIN: ${{ secrets.SURGE_LOGIN }}
+          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+        run: bin/deploy-sample-sites.sh --doit
+
+      - name: Verify sample sites
+        run: bin/deploy-sample-sites.sh --verify
