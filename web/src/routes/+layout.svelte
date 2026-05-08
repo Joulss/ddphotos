@@ -140,7 +140,7 @@
 		--text-color-2nd: #d0b81e;
 		--text-muted: #999;
 		--border-color: #333;
-		--shadow-color: rgba(0, 0, 0, 0.3);
+		--shadow-color: rgba(0, 0, 0, 0.7);
 		--link-color: #5a8ec0;
 		--img-placeholder: #282828; /* dark grey, distinct from #1a1a1a page background */
 	}
@@ -152,7 +152,7 @@
 		--text-color-2nd: #a49326;
 		--text-muted: #666;
 		--border-color: #ddd;
-		--shadow-color: rgba(0, 0, 0, 0.1);
+		--shadow-color: rgba(0, 0, 0, 0.3);
 		--link-color: #0066cc;
 		--img-placeholder: #f0f0f0; /* light grey, distinct from #ffffff page background */
 	}
