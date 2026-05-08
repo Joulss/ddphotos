@@ -177,6 +177,7 @@ web-playwright-test-all:
 ## web-sanity-test: quick sanity check — Playwright e2e tests against Apache, no-passwords + all-passwords variants
 web-sanity-test:
 	bin/run-tests.sh --mode apache
+	$(MAKE) sample-test-apache # also test routing tests against sample, which was just built
 	bin/run-tests.sh --mode apache --passwords sample/config/passwords-all.yaml
 
 .PHONY: gen-deploy-tree
