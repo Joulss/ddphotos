@@ -141,7 +141,7 @@
 		--text-muted: #999;
 		--border-color: #333;
 		--shadow-color: rgba(0, 0, 0, 0.3);
-		--link-color: #88b4e7;
+		--link-color: #5a8ec0;
 		--img-placeholder: #282828; /* dark grey, distinct from #1a1a1a page background */
 	}
 
@@ -247,12 +247,7 @@
 	}
 
 	.footer-link {
-		color: #5a8ec0;
 		text-decoration: none;
-	}
-
-	:global(:root[data-theme='light']) .footer-link {
-		color: var(--link-color);
 	}
 
 	.footer-link:hover {
@@ -265,14 +260,10 @@
 		padding: 0;
 		margin-right: .3rem;
 		cursor: pointer;
-		color: #5a8ec0;
+		color: var(--link-color);
 		display: inline-flex;
 		align-items: center;
 		vertical-align: -2px;
-	}
-
-	:global(:root[data-theme='light']) .about-btn {
-		color: var(--link-color);
 	}
 
 	.about-btn:hover {

@@ -1,16 +1,15 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import SecondaryPage from '$lib/components/SecondaryPage.svelte';
 </script>
 
 <svelte:head>
-	<title>Error - DD Photos</title>
+	<title>404 - Not Found</title>
 </svelte:head>
 
 <SecondaryPage>
 	<div class="error-content">
-		<h1>{page.status}</h1>
-		<p>{page.error?.message || 'Something went wrong'}</p>
+		<h1>404</h1>
+		<p>Page not found</p>
 		<a href="/">Back to albums</a>
 	</div>
 </SecondaryPage>
