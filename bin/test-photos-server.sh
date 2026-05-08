@@ -176,7 +176,12 @@ echo ""
 echo "Pages (expect 200):"
 check_status "$BASE"                              200 "Home page"
 check_status "$BASE/privacy"                      200 "Privacy page"
-check_status "$BASE/404.html"                     200 "404 page"
+if [ "$CLOUDFLARE_MODE" -eq 1 ]; then
+    # Cloudflare Pages strips .html extensions (clean URLs); /404.html redirects to /404
+    check_status "$BASE/404"                      200 "404 page"
+else
+    check_status "$BASE/404.html"                 200 "404 page"
+fi
 if [ -n "$ALBUM" ]; then
     check_status "$BASE/albums/$ALBUM"            200 "Album page ($ALBUM)"
 fi
