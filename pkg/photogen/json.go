@@ -423,7 +423,7 @@ func (c *Config) WriteCSSFile() error {
 	if err := os.WriteFile(outputPath, data, filePerms); err != nil {
 		return fmt.Errorf("write css: %w", err)
 	}
-	fmt.Printf("copied: %s\n", outputPath)
+	fmt.Printf("  copied: %s\n", outputPath)
 	c.TrackFile(outputPath)
 	return nil
 }
