@@ -1,8 +1,10 @@
 # DD Photos - Static Photo Album Site Generator
 
+[![Demo](https://img.shields.io/badge/Demo-ddphotos.donohoe.info-blue)](https://ddphotos.donohoe.info)
+[![Docker Image Version](https://img.shields.io/docker/v/dougdonohoe/ddphotos?logo=docker&label=Docker%20Hub)](https://hub.docker.com/r/dougdonohoe/ddphotos)
+[![Docker Pulls](https://img.shields.io/docker/pulls/dougdonohoe/ddphotos?logo=docker&label=Docker%20Pulls)](https://hub.docker.com/r/dougdonohoe/ddphotos)
 [![CI](https://github.com/dougdonohoe/ddphotos/actions/workflows/ci.yml/badge.svg)](https://github.com/dougdonohoe/ddphotos/actions)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Demo](https://img.shields.io/badge/Demo-ddphotos.donohoe.info-blue)](https://ddphotos.donohoe.info)
 
 ## Docker Quick Start
 
