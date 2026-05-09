@@ -105,7 +105,7 @@
 		<div class="modal-overlay" role="presentation" onclick={handleOverlayClick}>
 			<div class="modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
 				<div class="modal-header">
-					<span id="about-title">About this site</span>
+					<span id="about-title"><Info size={25} aria-hidden="true" /> About DD Photos</span>
 					<button class="modal-close" onclick={closeAbout} aria-label="Close"><X size={20} aria-hidden="true" /></button>
 				</div>
 				<dl class="modal-body">
@@ -315,6 +315,12 @@
 		color: var(--text-color);
 	}
 
+	#about-title {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.7rem;
+	}
+
 	.modal-close {
 		background: none;
 		border: none;
@@ -335,7 +341,7 @@
 		gap: 0.5rem 1.25rem;
 		padding: 1rem;
 		margin: 0;
-		font-size: 1.15rem;
+		font-size: 1rem;
 	}
 
 	.modal-body dt {
