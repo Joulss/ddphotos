@@ -30,7 +30,7 @@
 settings:
   id: __SITE_ID__
   site_name: My Photos
-  site_url: https://photos.yourdomain.com
+  site_url: https://your-ddphotos.example.com
   site_description: My personal photo gallery
   copyright_owner: Your Name
   copyright_year: 2026

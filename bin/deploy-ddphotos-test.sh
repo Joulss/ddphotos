@@ -69,7 +69,7 @@ fi
 # Update config
 step "config"
 /bin/cp ~/work/infra/photos/ddphotos-test/site.env "$DEPLOY_DIR/config/"
-sed -i '' "s/photos\.yourdomain\.com/$DOMAIN/g" "$DEPLOY_DIR/config/albums.yaml"
+sed -i '' "s/your-ddphotos\.example\.com/$DOMAIN/g" "$DEPLOY_DIR/config/albums.yaml"
 
 if $DO_PHOTOGEN; then
     step "photogen"

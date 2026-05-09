@@ -117,6 +117,12 @@ CONFIG_JSON="$DDPHOTOS_ALBUMS_DIR/$DDPHOTOS_SITE_ID/config.json"
 [ -f "$CONFIG_JSON" ] || { echo "Error: $CONFIG_JSON not found — run photogen first"; exit 1; }
 SITE_URL=$(python3 -c "import json; print(json.load(open('$CONFIG_JSON'))['siteUrl'])")
 [ -n "$SITE_URL" ] || { echo "Error: siteUrl not found in $CONFIG_JSON"; exit 1; }
+DEFAULT_URL="https://your-ddphotos.example.com"
+[ "$SITE_URL" = "$DEFAULT_URL" ] && {
+    echo "Error: 'site_url' in albums.yaml is still the default '$DEFAULT_URL'."
+    echo "       Set it to your actual site URL before deploying or pass -site-url [ur] to photogen"
+    exit 1
+}
 
 # Build static site
 if [ "$SKIP_BUILD" = true ]; then
