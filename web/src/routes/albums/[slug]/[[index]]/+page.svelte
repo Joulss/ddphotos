@@ -555,8 +555,8 @@
 
 		{#if invalidPhotoIndex !== null}
 			<div class="not-found">
-				<p>Sorry, there is no photo #{invalidPhotoIndex} in '{album.title}'.</p>
-				<a href="/albums/{slug}" class="back-link"><ArrowLeft size={16} aria-hidden="true" />Back to the album</a>
+				<p>Sorry, there is no photo No. {invalidPhotoIndex} in this album.  Maybe we lost the negative?</p>
+				<a href="/albums/{slug}" class="back-link"><ArrowLeft size={16} aria-hidden="true" />Back to '{album.title}'</a>
 			</div>
 		{/if}
 
@@ -700,6 +700,9 @@
 	}
 
 	.not-found a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
 		color: var(--link-color);
 		text-decoration: none;
 	}
