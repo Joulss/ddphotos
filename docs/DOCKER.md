@@ -33,30 +33,26 @@ cd ~/my-ddphotos
 ### 4. Deploy
 
 **Quick option — [Cloudflare Pages↗](https://pages.cloudflare.com)** - free, unlimited bandwidth (requires
-[Node.js](http://nodejs.org/) and a [Cloudflare account](https://dash.cloudflare.com/login)):
+a [Cloudflare account](https://dash.cloudflare.com/login); `wrangler` is bundled — no local install needed):
 
 ```bash
-# Install and login
-npm install -g wrangler --ignore-scripts
-wrangler login
+# One-time login (opens browser; credentials cached for future deploys)
+./ddphotos wrangler login
 
 # Export and deploy
 ./ddphotos export --cloudflare
-wrangler pages deploy --project-name my-unique-site export/my-photos
+./ddphotos wrangler pages deploy --project-name my-unique-site export/my-photos
 ```
 
 The site will be at https://my-unique-site.pages.dev.
 
-**Quick option — [Surge↗](https://surge.sh)** - free, one command, no server required (requires
-[Node.js](http://nodejs.org/)):
+**Quick option — [Surge↗](https://surge.sh)** - free, one command, no server required (`surge` is
+bundled — no local install needed):
 
 ```bash
-# Install
-npm install --global surge
-
-# Export and deploy (and on 1st time, create account/login)
+# Export and deploy (prompts for login on first run)
 ./ddphotos export --copy
-surge --domain my-unique-site.surge.sh export/my-photos
+./ddphotos surge --domain my-unique-site.surge.sh export/my-photos
 ```
 
 The site will be at https://my-unique-site.surge.sh.
@@ -104,14 +100,15 @@ ddphotos [options] [command] [args]
 
 These flags go before the command name and apply to all commands that need them:
 
-| Flag                  | Description                                                                                             |
-|-----------------------|---------------------------------------------------------------------------------------------------------|
-| `--dir <path>`        | Directory containing your `config` and `albums` dirs (default: same directory as the `ddphotos` script) |
-| `--config-dir <path>` | Path to a config directory other than `<dir>/config`                                                    |
-| `--site-id <id>`      | Override the site ID (normally read from `config/albums.yaml`)                                          |
-| `--site-env <path>`   | Path to a `site.env` file other than `<config-dir>/site.env`                                            |
-| `--non-interactive`   | Run `serve` and `run` without a TTY (no `-it` flag) — useful for scripted/CI contexts                   |
-| `--show-mounts`       | Print the Docker volume mounts before running the command — useful for debugging mount issues           |
+| Flag                  | Description                                                                                                |
+|-----------------------|------------------------------------------------------------------------------------------------------------|
+| `--dir <path>`        | Directory containing your `config` and `albums` dirs (default: same directory as the `ddphotos` script)    |
+| `--config-dir <path>` | Path to a config directory other than `<dir>/config`                                                       |
+| `--site-id <id>`      | Override the site ID (normally read from `config/albums.yaml`)                                             |
+| `--site-env <path>`   | Path to a `site.env` file other than `<config-dir>/site.env`                                               |
+| `--non-interactive`   | Run `serve` and `run` without a TTY (no `-it` flag) — useful for scripted/CI contexts                      |
+| `--show-mounts`       | Print the Docker volume mounts before running the command — useful for debugging mount issues              |
+| `--dev`               | Use the locally-built `ddphotos` image instead of the pinned release tag — useful for testing local builds |
 
 Example — using a separate source repo as the albums dir:
 
@@ -225,7 +222,7 @@ Use `--copy` to produce real files instead of symlinks — required for services
 
 ```bash
 ddphotos export --copy
-surge --domain my-unique-site.surge.sh export/my-photos
+ddphotos surge --domain my-unique-site.surge.sh export/my-photos
 ```
 
 Use `--cloudflare` for [Cloudflare Pages↗](https://pages.cloudflare.com) — adds a `_worker.js`
@@ -233,7 +230,7 @@ for photo permalink routing (symlinks are followed, so `--copy` is not needed):
 
 ```bash
 ddphotos export --cloudflare
-wrangler pages deploy --project-name my-unique-site export/my-photos
+ddphotos wrangler pages deploy --project-name my-unique-site export/my-photos
 ```
 
 See [Cloudflare Pages Worker](DEPLOYMENT-SERVERS.md#cloudflare-pages-worker) for details.

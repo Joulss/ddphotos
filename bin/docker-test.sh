@@ -14,6 +14,7 @@ SITE_ID="docker-test-id"  # passed to init via --site-id, verified against album
 RUN_PORT=5173             # Vite host port; matches container default to keep port-mapping consistent
 SERVE_PORT=8090           # Apache host port (maps to container port 80; avoids conflicts with run-tests.sh)
 DO_BUILD=true
+SKIP_PLAYWRIGHT=false
 TEST_DIR=""
 TEST_DIR2=""
 TEMP_DECODE_DIR=""
@@ -25,8 +26,9 @@ SERVE_PID=""
 # --- flags ---
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --no-build) DO_BUILD=false; shift ;;
-        --help|-\?) echo "Usage: bin/docker-test.sh [--no-build]"; exit 0 ;;
+        --no-build)        DO_BUILD=false;        shift ;;
+        --skip-playwright) SKIP_PLAYWRIGHT=true;  shift ;;
+        --help|-\?) echo "Usage: bin/docker-test.sh [--no-build] [--skip-playwright]"; exit 0 ;;
         *) echo "Unknown flag: $1" >&2; exit 1 ;;
     esac
 done
@@ -60,6 +62,7 @@ if ! command -v node &>/dev/null; then
 fi
 
 run_playwright() {
+    $SKIP_PLAYWRIGHT && { echo "  (Playwright skipped)"; return 0; }
     local base_url="$1" passwords_file="${2:-}"
     (
         cd "$REPO_ROOT/web"
@@ -273,8 +276,18 @@ run_playwright "http://localhost:$SERVE_PORT" "$PASSWORDS_FILE"
 kill "$SERVE_PID" 2>/dev/null || true; wait "$SERVE_PID" 2>/dev/null || true; SERVE_PID=""
 pass "serve + Playwright + test-photos-server.sh OK"
 
-# ── 13. Export (symlink mode) ──────────────────────────────────────────────────
+# ── 13. Export  ──────────────────────────────────────────────────────────────────
 EXPORT_DIR="$TEST_DIR/export/$SITE_ID"
+
+step "Wrangler w/out export"
+out=$("${DDPHOTOS_QUIET[@]}" --non-interactive wrangler pages deploy --project-name docker-test export/$SITE_ID 2>&1) || true
+echo "$out" | grep -q "Run 'export --cloudflare' first" || (echo "$out" && fail "wrangler: expected 'Run export first' error when export dir missing")
+pass "wrangler: fails correctly when export dir missing"
+
+step "Surge w/out export"
+out=$("${DDPHOTOS_QUIET[@]}" --non-interactive surge --domain foo.surge.sh export/$SITE_ID 2>&1) || true
+echo "$out" | grep -q "not found" || (echo "$out" && fail "surge: expected 'Run export first' error when export dir missing")
+pass "surge: fails correctly when export dir is missing"
 
 step "Export (symlinks)"
 "${DDPHOTOS[@]}" export
@@ -300,6 +313,26 @@ symlinks=$(find "$EXPORT_DIR" -type l)
 [ -z "$symlinks" ] || fail "export --copy still has symlinks: $symlinks"
 FILE_COUNT=$(find "$EXPORT_DIR" -type f | wc -l | tr -d ' ')
 pass "export --copy OK ($FILE_COUNT files, no symlinks)"
+
+step "Wrangler w/out --cloudflare (_worker.js missing)"
+out=$("${DDPHOTOS_QUIET[@]}" --non-interactive wrangler pages deploy --project-name docker-test export/$SITE_ID 2>&1) || true
+echo "$out" | grep -q "not just 'export'" || (echo "$out" && fail "deploy: expected 'not just export' error when --cloudflare not used")
+pass "wrangler: fails correctly when _worker.js missing"
+
+step "Surge w/out --copy (export contains symlinks)"
+# export/alternate was created without --copy so index.html is still a symlink
+out=$("${DDPHOTOS_QUIET[@]}" --non-interactive surge --domain foo.surge.sh export/alternate 2>&1) || true
+echo "$out" | grep -q "contains symlinks" || (echo "$out" && fail "surge: expected 'contains symlinks' error")
+pass "surge: fails correctly when export dir contains symlinks"
+
+step "Surge subcommands bypass directory check"
+# 'list' has no '/' so do-surge.sh skips the dir check and passes through to surge
+out=$("${DDPHOTOS_QUIET[@]}" --non-interactive surge list 2>&1) || true
+if echo "$out" | grep -q "Run 'ddphotos export --copy'"; then
+    echo "$out"
+    fail "surge: 'list' subcommand should not trigger directory check"
+fi
+pass "surge: subcommands bypass directory check"
 
 step "Export --cloudflare"
 "${DDPHOTOS[@]}" export --cloudflare

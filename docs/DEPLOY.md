@@ -83,46 +83,49 @@ unlimited bandwidth. Photo permalink routing requires a `_worker.js` — use `--
 instead of `--copy` to generate it automatically (symlinks are followed, so `--copy` is
 not needed).
 
-Assuming you have `wrangler` installed (`npm install -g wrangler --ignore-scripts`), in Docker mode:
+In Docker mode (`wrangler` is bundled — no local install needed):
 
 ```bash
 ./ddphotos export --cloudflare
-wrangler pages deploy --project-name my-unique-site export/my-photos
+./ddphotos wrangler login   # one-time; credentials cached in Docker volume
+./ddphotos wrangler pages deploy --project-name my-unique-site export/my-photos
 ```
 
-In developer mode:
+In developer mode (requires `wrangler` installed locally: `npm install -g wrangler --ignore-scripts`):
 
 ```bash
 export.sh --site-id <site-id> --cloudflare
-wrangler pages deploy --project-name my-unique-site export/<site-id> 
+wrangler login
+wrangler pages deploy --project-name my-unique-site export/<site-id>
 ```
 
 The first deploy creates the project automatically and assigns a URL of
 https://my-unique-site.pages.dev. See [Cloudflare Pages Worker](DEPLOYMENT-SERVERS.md#cloudflare-pages-worker)
-for how routing works.
+for how page routing works.
 
 ### Surge
 
 [Surge↗](https://surge.sh) is a simple, free alternative for hosting static sites.
 Export must use `--copy` since symlinks aren't followed.
 
-Assuming you have `surge` installed (`npm install --global surge`), in Docker mode:
+In Docker mode (`surge` is bundled — no local install needed):
 
 ```bash
 ./ddphotos export --copy
-./surge --domain my-unique-site.surge.sh export/my-photos
+# prompts for login on first run; credentials cached in ~/.netrc
+./ddphotos surge --domain my-unique-site.surge.sh export/my-photos  
 ```
 
-In developer mode:
+In developer mode (requires `surge` installed locally: `npm install --global surge`):
 
 ```bash
 export.sh --site-id <site-id> --copy
-./surge --domain my-unique-site.surge.sh export/<site-id>
+surge --domain my-unique-site.surge.sh export/<site-id>
 ```
 
 The site will be at https://my-unique-site.surge.sh.
 
-See [Surge](DEPLOYMENT-SERVERS.md#surge) for routing behavior and known limitations.
+See [Surge](DEPLOYMENT-SERVERS.md#surge) for page routing behavior and known limitations.
 
 ## Apache + rsync
 

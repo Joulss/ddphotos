@@ -99,29 +99,7 @@ fi
 DEPLOY_DIR="$HOME/junk/ddphotos-deploy"
 mkdir -p "$DEPLOY_DIR"
 
-# Source nvm if node not on PATH
-if ! command -v node &>/dev/null; then
-    NVM_SH="${NVM_DIR:-$HOME/.nvm}/nvm.sh"
-    [ -f "$NVM_SH" ] || { echo "Error: node not found; install Node.js or nvm" >&2; exit 1; }
-    # shellcheck source=/dev/null
-    source "$NVM_SH"
-fi
-
-# Check that required deploy tools are installed (only needed when actually uploading)
-if $DOIT; then
-    if $DO_CLOUDFLARE; then
-        command -v wrangler &>/dev/null || {
-            echo "Error: wrangler not found; install with: npm install -g wrangler --ignore-scripts" >&2
-            exit 1
-        }
-    fi
-    if $DO_SURGE; then
-        command -v surge &>/dev/null || {
-            echo "Error: surge not found; install with: npm install --global surge" >&2
-            exit 1
-        }
-    fi
-fi
+# Both wrangler and surge are bundled in the Docker image via npx; no local install needed.
 
 step() { echo; echo "=== $* ==="; }
 
@@ -213,7 +191,7 @@ _deploy_site() {
             fi
             if $DOIT; then
                 echo "wrangler: deploy $wrangler_project"
-                (cd "$site_dir" && wrangler pages deploy --project-name "$wrangler_project" export/cloudflare)
+                "$site_dir/ddphotos" wrangler pages deploy --project-name "$wrangler_project" export/cloudflare
             else
                 echo "wrangler: skipping upload (--doit not set)"
             fi
@@ -227,7 +205,7 @@ _deploy_site() {
             fi
             if $DOIT; then
                 echo "surge: deploy $surge_domain"
-                (cd "$site_dir" && surge --domain "$surge_domain" export/surge)
+                "$site_dir/ddphotos" surge --domain "$surge_domain" export/surge
             else
                 echo "surge: skipping upload (--doit not set)"
             fi
