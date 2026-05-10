@@ -191,7 +191,7 @@ _deploy_site() {
             fi
             if $DOIT; then
                 echo "wrangler: deploy $wrangler_project"
-                "$site_dir/ddphotos" wrangler pages deploy --project-name "$wrangler_project" export/cloudflare
+                "$site_dir/ddphotos" --non-interactive wrangler pages deploy --project-name "$wrangler_project" export/cloudflare
             else
                 echo "wrangler: skipping upload (--doit not set)"
             fi
@@ -205,7 +205,7 @@ _deploy_site() {
             fi
             if $DOIT; then
                 echo "surge: deploy $surge_domain"
-                "$site_dir/ddphotos" surge --domain "$surge_domain" export/surge
+                "$site_dir/ddphotos" --non-interactive surge --domain "$surge_domain" export/surge
             else
                 echo "surge: skipping upload (--doit not set)"
             fi
