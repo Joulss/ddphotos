@@ -178,13 +178,12 @@ _run_s3() {
         return
     fi
 
-    # TODO: Temp fix: Docker init creates site.env as root-owned rw-r--r--; delete so we can recreate it.
-    #       Remove once do-init.sh's chmod a+w is in a released image.
-    /bin/rm -f "$site_dir/config/site.env"
+    # Overwrite site.env with values from env
     {
         printf 'S3_BUCKET=%s\n' "$s3_bucket"
         [ -n "$s3_cf_id" ] && printf 'CLOUDFRONT_ID=%s\n' "$s3_cf_id"
     } > "$site_dir/config/site.env"
+
     if $DOIT; then
         echo "s3: deploy $s3_bucket"
         "$site_dir/ddphotos" deploy --no-server-test # server test done by --verify
