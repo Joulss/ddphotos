@@ -15,7 +15,7 @@ settings:
     These albums are from the sample site bundled with
     <a href="https://github.com/dougdonohoe/ddphotos/blob/main/README.md" target="_blank" rel="noopener">DD Photos</a>,
     a free and open-source self-hosted photo gallery.
-    Browse the photos below, then make it yours. One Docker command to get started.
+    Browse the photos below, then publish your own albums. One Docker command to get started.
   hero:
     image: theway/2024-The-Way-13.jpg
     base: sample
