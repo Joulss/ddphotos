@@ -22,8 +22,10 @@ Two variables tell the dev server, build, and Docker container where to find alb
 | `DDPHOTOS_ALBUMS_DIR` | `albums` | Path to the root albums directory (absolute or repo-root-relative)                                                              |
 | `DDPHOTOS_SITE_ID`    | `sample` | Site ID — selects `<DDPHOTOS_ALBUMS_DIR>/<DDPHOTOS_SITE_ID>` as the active site. Also used to choose active build under `build` |
 
-Defaults are defined in `config/defaults.env` and are automatically picked up by the Makefile
-and `vite.config.ts`. Override them on the command line as needed:
+Defaults are defined in `config/defaults.env` and are automatically picked up by the `Makefile`, `vite.config.ts`,
+`photogen` and various other scripts.
+
+Override them on the command line as needed:
 
 ```bash
 # Use a different site ID
@@ -34,6 +36,7 @@ DDPHOTOS_ALBUMS_DIR=~/photos/albums DDPHOTOS_SITE_ID=mySite make web-npm-build
 ```
 
 These variables are consumed by:
+
 - `cmd/photogen` — writes processed photos and JSON to `<DDPHOTOS_ALBUMS_DIR>/<site-id>/` (site ID comes from the albums config YAML, not `DDPHOTOS_SITE_ID`)
 - `web/vite.config.ts` — dev server middleware serves `/albums/**` from `<DDPHOTOS_ALBUMS_DIR>/<DDPHOTOS_SITE_ID>/`
 - `web/svelte.config.js` — build output goes to `build/<DDPHOTOS_SITE_ID>/`; album slugs are read for pre-rendered entries
