@@ -2,7 +2,7 @@ settings:
   id: sample
   site_name: "DD Photos Sample Albums"
   site_url: https://ddphotos.donohoe.info
-  site_description: "DD Photos demo site - A super-fast open-source static photo gallery. Self-host your memories, no database required."
+  site_description: "DD Photos - Your memories, your way. No subscriptions, no lock-in, deploys in minutes with Docker."
   copyright_owner: "Doug and Cindy Donohoe"
   copyright_year: 2001
   allow_crawling: true
@@ -10,12 +10,12 @@ settings:
   site_title_html: >-
     <a href="https://github.com/dougdonohoe/ddphotos" target="_blank" rel="noopener">DD Photos</a>
   site_subtitle_html: >-
-    A super-fast open-source static photo gallery. Self-host your memories, no database required.
+    Self-host your memories. No subscriptions, no lock-in, yours forever.
   site_overview_html: >-
     These albums are from the sample site bundled with
-    <a href="https://github.com/dougdonohoe/ddphotos" target="_blank" rel="noopener">DD Photos</a>,
-    a free and open-source self-hosted static photo gallery.
-    Browse the photos below, then grab the code and build your own.
+    <a href="https://github.com/dougdonohoe/ddphotos/blob/main/README.md" target="_blank" rel="noopener">DD Photos</a>,
+    a free and open-source self-hosted photo gallery.
+    Browse the photos below, then make it yours. One Docker command to get started.
   hero:
     image: theway/2024-The-Way-13.jpg
     base: sample
