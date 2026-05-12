@@ -222,6 +222,18 @@ host_to_container() {
     fi
 }
 
+# Ensure Docker daemon is running, or print a platform-appropriate hint and exit.
+ensure_docker_running() {
+    docker info >/dev/null 2>&1 && return 0
+
+    if [[ "$OSTYPE" == "darwin"* || "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+        echo "Error: Docker is not running. Make sure Docker Desktop is open." >&2
+    else
+        echo "Error: Docker is not running. Start it with: sudo systemctl start docker" >&2
+    fi
+    exit 1
+}
+
 # For commands that need a config, validate albums.yaml exists before launching Docker.
 case "$cmd" in
     init|upgrade|help|version|wrangler|surge) ;;
@@ -257,6 +269,11 @@ check_for_update
 # Print update msg if not on dev image
 if [ -f "$UPGRADE_FILE" ] && [ "$CURRENT_VERSION" != "ddphotos" ] ; then
     echo "Update available from $CURRENT_VERSION: $(cat "$UPGRADE_FILE") - run 'ddphotos upgrade' to update" >&2
+fi
+
+# Require Docker for all commands except: help, and version without --image.
+if [[ "$cmd" != "help" ]] && [[ "$cmd" != "version" || "${1:-}" == "--image" ]]; then
+    ensure_docker_running
 fi
 
 case "$cmd" in

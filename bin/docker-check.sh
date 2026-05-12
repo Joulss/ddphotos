@@ -33,7 +33,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 if ! docker info >/dev/null 2>&1; then
-    echo "ERROR: Docker daemon is not running."
+    if [[ "$OSTYPE" == "darwin"* || "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+        echo "ERROR: Docker is not running. Make sure Docker Desktop is open."
+    else
+        echo "ERROR: Docker is not running. Start it with: sudo systemctl start docker"
+    fi
     exit 1
 fi
 
