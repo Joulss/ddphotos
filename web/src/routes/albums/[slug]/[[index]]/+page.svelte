@@ -201,22 +201,6 @@
 		window.addEventListener('popstate', handlePopstate);
 		activePopstateHandler = handlePopstate;
 
-		// Request fullscreen on mobile for immersive viewing
-		pswp.on('openingAnimationEnd', () => {
-			if (document.documentElement.requestFullscreen && window.innerWidth <= 768) {
-				document.documentElement.requestFullscreen().catch(() => {
-					// Fullscreen request failed (user denied or not supported)
-				});
-			}
-		});
-
-		// Exit fullscreen when closing lightbox
-		pswp.on('close', () => {
-			if (document.fullscreenElement) {
-				document.exitFullscreen().catch(() => {});
-			}
-		});
-
 		pswp.on('openingAnimationStart', () => {
 			lightboxOpen = true;
 		});
@@ -773,7 +757,7 @@
 		color: white;
 		font-size: 0.78rem;
 		line-height: 1.2;
-		text-align: left;
+		text-align: center;
 		opacity: 0;
 		transform: translateY(4px);
 		transition: opacity 0.25s ease, transform 0.25s ease;
