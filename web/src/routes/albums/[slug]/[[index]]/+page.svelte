@@ -362,7 +362,7 @@
 					el.textContent = item.caption;
 					el.style.display = '';
 					const scale = Math.min(window.innerWidth / item.w, window.innerHeight / item.h);
-					el.style.bottom = `${(window.innerHeight - item.h * scale) / 2}px`;
+					el.style.bottom = `${Math.floor((window.innerHeight - item.h * scale) / 2)}px`;
 				});
 			};
 
@@ -563,7 +563,7 @@
 		<div
 			class="gallery"
 			bind:this={container}
-			style="height: {layout().containerHeight}px;"
+			style="height: {Math.ceil(layout().containerHeight)}px;"
 			class:layout-ready={layoutReady}
 		>
 			{#each album.photos as photo, i}
