@@ -231,8 +231,11 @@ The amount of space is set in _Docker Desktop → Settings → Resources → Adv
 
 ## Static Site Examples
 
-Use `bin/deploy-sample-sites.sh --doit` to deploy `init` and `sample` sites to Cloudflare and surge.
+Use `bin/deploy-sample-sites.sh --doit` to deploy `init` and `sample` sites to S3, Cloudflare and surge.
 
+* DD Photos Official sites (S3)
+  * Init: [ddphotos-test.donohoe.info↗](https://ddphotos-test.donohoe.info) 
+  * Sample: [ddphotos.donohoe.info↗](https://ddphotos.donohoe.info) 
 * Surge sites
   * Init: [ddphotos-init.surge.sh↗](https://ddphotos-init.surge.sh) (was [ddphotos-test-docker.surge.sh↗](https://ddphotos-test-docker.surge.sh/), now redirects)
   * Sample: [ddphotos-sample.surge.sh↗](https://ddphotos-sample.surge.sh) (was [ddphotos-test-sample.surge.sh↗](https://ddphotos-test-sample.surge.sh/), now redirects)
@@ -249,6 +252,15 @@ The `deploy-sample-sites.yml` workflow is triggered when the `docker-release.yml
 It runs `deploy-sample-sites.sh --doit` and then `--verify`.  The following secrets are needed
 for each deployment type:
 
+#### S3 (AWS)
+
+S3 deployment uses GitHub Actions OIDC — no long-lived credentials are stored. The IAM role
+is defined in a private infra repo.
+
+* `DDPHOTOS_DEPLOY_ROLE_ARN` — IAM role ARN; get from tofu output (see below)
+* `DDPHOTOS_CF_ID` — CloudFront distribution ID for `ddphotos.donohoe.info`
+* `DDPHOTOS_TEST_CF_ID` — CloudFront distribution ID for `ddphotos-test.donohoe.info`
+
 #### Cloudflare (wrangler)
 
  * `CLOUDFLARE_API_TOKEN` — create at [dash.cloudflare.com](https://dash.cloudflare.com) 
@@ -260,15 +272,6 @@ for each deployment type:
 
  * `SURGE_LOGIN` — your `surge` email
  * `SURGE_TOKEN` — run `surge token` locally to print it
-
-#### S3 (AWS)
-
-S3 deployment uses GitHub Actions OIDC — no long-lived credentials are stored. The IAM role
-is defined in a private infra repo.
-
- * `DDPHOTOS_DEPLOY_ROLE_ARN` — IAM role ARN; get from tofu output (see below)
- * `DDPHOTOS_CF_ID` — CloudFront distribution ID for `ddphotos.donohoe.info`
- * `DDPHOTOS_TEST_CF_ID` — CloudFront distribution ID for `ddphotos-test.donohoe.info`
 
 #### Secrets
 
