@@ -420,6 +420,20 @@ albums: []
 		assert.Equal(t, heroFile, af.Settings.HeroImagePath)
 	})
 
+	t.Run("absolute image with base is an error", func(t *testing.T) {
+		af := writeYAML(t, `
+bases:
+  mm: /some/base
+settings:
+  hero:
+    image: /absolute/hero.jpg
+    base: mm
+albums: []
+`)
+		_, err := LoadAlbumsFile(af)
+		require.ErrorContains(t, err, "image is an absolute path")
+	})
+
 	t.Run("hero image does not exist", func(t *testing.T) {
 		configDir := t.TempDir()
 		af := parseYAML(t, configDir, `

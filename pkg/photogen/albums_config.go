@@ -100,6 +100,9 @@ func (af *AlbumsFile) validate() error {
 		if h.Image == "" {
 			return fmt.Errorf("hero: image is required")
 		}
+		if h.Base != "" && filepath.IsAbs(h.Image) {
+			return fmt.Errorf("hero: image is an absolute path — remove base or use a relative path")
+		}
 		if h.Base != "" {
 			if _, ok := af.Bases[h.Base]; !ok {
 				return fmt.Errorf("hero: base %q not defined in bases", h.Base)
