@@ -78,5 +78,4 @@ if [ -n "$CLOUDFLARE" ]; then
 fi
 
 echo "  Exported $SITE_ID to export/$EXPORT_SITE_ID"
-echo "  Serve with: python3 -m http.server 8000 --directory export/$EXPORT_SITE_ID"
 echo ""
