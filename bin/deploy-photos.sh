@@ -334,5 +334,5 @@ else
 fi
 
 echo
-echo "Deploy done."
+echo "Deploy done to $SITE_URL."
 echo
