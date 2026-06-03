@@ -47,13 +47,21 @@ if [ -z "$DDPHOTOS_DIR" ]; then
     else
         DDPHOTOS_DIR="$(pwd)"
     fi
+elif [ ! -d "$DDPHOTOS_DIR" ]; then
+    echo "Error: --dir directory not found: $DDPHOTOS_DIR" >&2; exit 1
 fi
 
 # CONFIG_HOST_DIR: host path to config directory (normalized)
 if [ -n "$OPT_CONFIG_DIR" ]; then
+    if [ ! -d "$OPT_CONFIG_DIR" ]; then
+        echo "Error: --config-dir directory not found: $OPT_CONFIG_DIR" >&2; exit 1
+    fi
     CONFIG_HOST_DIR="$(cd "$OPT_CONFIG_DIR" && pwd)"
 else
     CONFIG_HOST_DIR="$DDPHOTOS_DIR/config"
+    if [ ! -d "$CONFIG_HOST_DIR" ]; then
+        echo "Error: config directory not found: $CONFIG_HOST_DIR" >&2; exit 1
+    fi
 fi
 
 # DDPHOTOS_SITE_ID: read from config dir's albums.yaml settings.id if not set via env or flag
@@ -118,6 +126,9 @@ fi
 # Resolve --site-env: mount as /ddphotos-site.env.
 DDPHOTOS_SITE_ENV=""
 if [ -n "$OPT_SITE_ENV" ]; then
+    if [ ! -f "$OPT_SITE_ENV" ]; then
+        echo "Error: --site-env file not found: $OPT_SITE_ENV" >&2; exit 1
+    fi
     OPT_SITE_ENV="$(cd "$(dirname "$OPT_SITE_ENV")" && pwd)/$(basename "$OPT_SITE_ENV")"
     DDPHOTOS_SITE_ENV="/ddphotos-site.env"
     add_mount "$OPT_SITE_ENV" "$DDPHOTOS_SITE_ENV" ro
