@@ -7,7 +7,8 @@ The easiest way to run ddphotos is via Docker — no Go, Node, or libvips instal
 ### 1. Install Docker
 
 If you don't have Docker installed, click on the **Download Docker Desktop** button at the
-[Docker Getting Started↗](https://www.docker.com/get-started/) page and install it.
+[Docker Getting Started↗](https://www.docker.com/get-started/) page to download the appropriate
+installer for your machine.  Install it and then start _Docker.app_ (Mac) or _Docker Desktop_ (Windows/Linux).
 
 ### 2. Initialize Scaffolding
 
