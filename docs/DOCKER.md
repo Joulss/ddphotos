@@ -4,7 +4,12 @@ The easiest way to run ddphotos is via Docker — no Go, Node, or libvips instal
 
 ## Quick Start
 
-### 1. Initialize Scaffolding
+### 1. Install Docker
+
+If you don't have Docker installed, click on the **Download Docker Desktop** button at the
+[Docker Getting Started↗](https://www.docker.com/get-started/) page and install it.
+
+### 2. Initialize Scaffolding
 
 Initialize a dedicated working directory that contains both the `ddphotos` script and
 a starter config:
@@ -14,7 +19,7 @@ mkdir ~/my-ddphotos
 docker run --rm -v ~/my-ddphotos:/ddphotos dougdonohoe/ddphotos init
 ```
 
-### 2. Generate, run, build, and serve the starter site
+### 3. Generate, run, build, and serve the starter site
 
 ```bash
 cd ~/my-ddphotos
@@ -22,17 +27,16 @@ cd ~/my-ddphotos
 ./ddphotos run        # run dev server at http://localhost:5173
 ./ddphotos build      # build static site
 ./ddphotos serve      # serve static site via Apache at http://localhost:8000
-./ddphotos export     # (optional) export for local serving without Apache
 ```
 
-### 3. Build your own site
+### 4. Build your own site
 
 1. Edit `config/albums.yaml` to define your albums (see [Configuration](CONFIGURATION.md) for details)
 2. Repeat: `photogen` → `run` / `build` → `serve`
 
-### 4. Deploy
+### 5. Deploy
 
-**Quick option — [Cloudflare Pages↗](https://pages.cloudflare.com)** - free, unlimited bandwidth (requires
+**Quick option #1 — [Cloudflare Pages↗](https://pages.cloudflare.com)** - free, unlimited bandwidth (requires
 a [Cloudflare account](https://dash.cloudflare.com/login); `wrangler` is bundled — no local install needed):
 
 ```bash
@@ -46,7 +50,7 @@ a [Cloudflare account](https://dash.cloudflare.com/login); `wrangler` is bundled
 
 The site will be at https://my-unique-site.pages.dev.
 
-**Quick option — [Surge↗](https://surge.sh)** - free, one command, no server required (`surge` is
+**Quick option #2 — [Surge↗](https://surge.sh)** - free, one command, no server required (`surge` is
 bundled — no local install needed):
 
 ```bash
@@ -66,7 +70,7 @@ The site will be at https://my-unique-site.surge.sh.
 
 See [Deployment](DEPLOY.md) for full setup details.
 
-### 5. Install the `ddphotos` wrapper script
+### 6. Install the `ddphotos` wrapper script
 
 Advanced users can install just the wrapper script into a directory on their `PATH`:
 
