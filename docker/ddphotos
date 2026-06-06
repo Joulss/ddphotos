@@ -59,9 +59,6 @@ if [ -n "$OPT_CONFIG_DIR" ]; then
     CONFIG_HOST_DIR="$(cd "$OPT_CONFIG_DIR" && pwd)"
 else
     CONFIG_HOST_DIR="$DDPHOTOS_DIR/config"
-    if [ ! -d "$CONFIG_HOST_DIR" ]; then
-        echo "Error: config directory not found: $CONFIG_HOST_DIR" >&2; exit 1
-    fi
 fi
 
 # DDPHOTOS_SITE_ID: read from config dir's albums.yaml settings.id if not set via env or flag
@@ -257,6 +254,9 @@ ensure_docker_running() {
 case "$cmd" in
     init|upgrade|help|version|wrangler|surge) ;;
     *)
+        if [ ! -d "$CONFIG_HOST_DIR" ]; then
+            echo "Error: config directory not found: $CONFIG_HOST_DIR" >&2; exit 1
+        fi
         if [ ! -f "$CONFIG_HOST_DIR/albums.yaml" ]; then
             echo "Error: no config found at $CONFIG_HOST_DIR/albums.yaml" >&2
             echo >&2
