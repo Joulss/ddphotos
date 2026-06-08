@@ -8,6 +8,8 @@ cd /ddphotos
 CONFIG_DIR="${DDPHOTOS_CONFIG_DIR:-/ddphotos/config}"
 SITE_ID="${DDPHOTOS_SITE_ID}" # if no site-id, uses settings.id in $CONFIG_DIR/albums.yaml
 
+# exec replaces this process, so it never returns - the call below and the one at the
+# bottom of the script are mutually exclusive alternatives, not a sequence.
 photogen() {
     echo "Calling 'photogen $*' ..."
     echo ""
