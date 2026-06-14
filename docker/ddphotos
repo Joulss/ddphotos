@@ -503,12 +503,17 @@ case "$cmd" in
         ;;
 
     upgrade)
+        # We run 'upgrade' command using new image which has the side effect of pulling
+        # the new version.
         UPGRADE_IMAGE="$IMAGE"
         if [[ "$CURRENT_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] && [ -f "$UPGRADE_FILE" ]; then
             TARGET_VERSION=$(cat "$UPGRADE_FILE")
             UPGRADE_IMAGE="${IMAGE%%:*}:$TARGET_VERSION"
+            LATEST_IMAGE="${IMAGE%%:*}:latest"
         fi
         docker run --rm "${MOUNT_FLAGS[@]}" "$UPGRADE_IMAGE" upgrade
+        # update 'latest' tag to match
+        docker tag "$UPGRADE_IMAGE" "$LATEST_IMAGE"
         ;;
 
     version)
