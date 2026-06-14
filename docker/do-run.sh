@@ -20,7 +20,7 @@ export DDPHOTOS_SITE_ID="$SITE_ID"
 cd /app/web
 
 RUN_PORT="${RUN_PORT:-5173}"
-echo "  Running dev server for $SITE_ID at: http://localhost:${RUN_PORT}"
+echo "  Starting dev server for $SITE_ID at localhost:${RUN_PORT}..."
 
 # set -m puts background jobs in their own process group, so Ctrl-C (SIGINT) goes
 # only to this shell — not npm — letting us kill it cleanly without npm's error output.
