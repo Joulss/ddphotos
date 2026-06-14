@@ -83,6 +83,19 @@ docker run --rm -v ~/.local/bin:/ddphotos dougdonohoe/ddphotos init --script-onl
 docker run --rm -v ~/bin:/ddphotos dougdonohoe/ddphotos init --script-only
 ```
 
+Once the script is on your `PATH`, you can create a starter site (config scaffold) in any
+directory by passing `--dir`:
+
+```bash
+mkdir ~/my-ddphotos
+ddphotos --dir ~/my-ddphotos init
+```
+
+This scaffolds `config/albums.yaml` and friends into `~/my-ddphotos`, the same as the full
+`init` in [Initialize Scaffolding](#2-initialize-scaffolding). Pass `--site-id` to set a
+custom site ID. From then on, use `--dir ~/my-ddphotos` (or `cd ~/my-ddphotos`) with the
+other commands.
+
 If you have `ddphotos` on the path and the `ddphotos` repo checked out under `~/work`, you
 can use the script to photogen and run the [sample site↗](https://ddphotos.donohoe.info/):
 
@@ -153,12 +166,19 @@ docker run --rm -v ~/my-ddphotos:/ddphotos dougdonohoe/ddphotos init --site-id m
 
 # Script only (no config scaffold)
 docker run --rm -v ~/.local/bin:/ddphotos dougdonohoe/ddphotos init --script-only
+
+# Using an already-installed script (e.g. after --script-only) to scaffold a new site dir
+ddphotos --dir ~/my-ddphotos init
 ```
 
 | Flag            | Description                                                                       |
 |-----------------|-----------------------------------------------------------------------------------|
 | `--site-id ID`  | Site ID written into `config/albums.yaml` as `settings.id` (default: `my-photos`) |
 | `--script-only` | Install just the `ddphotos` wrapper script; skip config scaffold                  |
+
+If `ddphotos` is already on your `PATH` (for example, installed via `--script-only`), run
+`ddphotos --dir <path> init` to scaffold a starter config into `<path>` without a raw
+`docker run`. See [Install the `ddphotos` wrapper script](#6-install-the-ddphotos-wrapper-script).
 
 ### `photogen`
 
