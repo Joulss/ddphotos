@@ -59,7 +59,6 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href="/favicon.ico" />
 	<!-- Consumed by the inline script in app.html to scope cover CSS vars to the current build. -->
 	<meta name="ddp-site-id" content={data.siteConfig?.siteId ?? ''} />
 	<!-- Consumed by the inline script in app.html to set the default theme on first visit. -->
