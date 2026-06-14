@@ -112,21 +112,22 @@ Usage:
 ```text
 ddphotos [options] [command] [args]
 ```
+
 ---
 
 ### Pre-Command Options
 
 These flags go before the command name and apply to all commands that need them:
 
-| Flag                  | Description                                                                                                |
-|-----------------------|------------------------------------------------------------------------------------------------------------|
-| `--dir <path>`        | Directory containing your `config` and `albums` dirs (default: same directory as the `ddphotos` script)    |
-| `--config-dir <path>` | Path to a config directory other than `<dir>/config`                                                       |
-| `--site-id <id>`      | Override the site ID (normally read from `config/albums.yaml`)                                             |
-| `--site-env <path>`   | Path to a `site.env` file other than `<config-dir>/site.env`                                               |
-| `--non-interactive`   | Run `serve` and `run` without a TTY (no `-it` flag) — useful for scripted/CI contexts                      |
-| `--show-mounts`       | Print the Docker volume mounts before running the command — useful for debugging mount issues              |
-| `--dev`               | Use the locally-built `ddphotos` image instead of the pinned release tag — useful for testing local builds |
+| Flag                | Description                                                                                                |
+|---------------------|------------------------------------------------------------------------------------------------------------|
+| `--dir DIR`         | Directory containing your `config` and `albums` dirs (default: same directory as the `ddphotos` script)    |
+| `--config-dir DIR`  | Path to a config directory other than `<dir>/config`                                                       |
+| `--site-id ID`      | Override the site ID (normally read from `config/albums.yaml`)                                             |
+| `--site-env FILE`   | Path to a `site.env` file other than `<config-dir>/site.env`                                               |
+| `--non-interactive` | Run `serve` and `run` without a TTY (no `-it` flag) — useful for scripted/CI contexts                      |
+| `--show-mounts`     | Print the Docker volume mounts before running the command — useful for debugging mount issues              |
+| `--dev`             | Use the locally-built `ddphotos` image instead of the pinned release tag — useful for testing local builds |
 
 Example — using a separate source repo as the albums dir:
 
@@ -278,6 +279,13 @@ Requires `config/site.env`.
 
 ```bash
 ddphotos deploy
+```
+
+Extra flags pass through to the underlying deploy script. For example, to select a named
+AWS profile from `~/.aws` instead of relying on `AWS_*` environment variables:
+
+```bash
+ddphotos deploy --aws-profile my-profile
 ```
 
 See [Deployment](DEPLOY.md) for full setup details.

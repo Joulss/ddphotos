@@ -16,6 +16,7 @@ S3_MODE=false
 CONFIG_DIR="config"
 SITE_ENV_ARG=""
 SITE_ID_ARG=""
+AWS_PROFILE_ARG=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --no-photogen)       SKIP_PHOTOGEN=true; shift ;;
@@ -32,6 +33,8 @@ while [[ $# -gt 0 ]]; do
         --site-env=*)        SITE_ENV_ARG="${1#*=}"; shift ;;
         --site-id)           SITE_ID_ARG="$2"; shift 2 ;;
         --site-id=*)         SITE_ID_ARG="${1#*=}"; shift ;;
+        --aws-profile)       AWS_PROFILE_ARG="$2"; shift 2 ;;
+        --aws-profile=*)     AWS_PROFILE_ARG="${1#*=}"; shift ;;
         *)
             echo "Unknown flag: $1" >&2
             echo "" >&2
@@ -42,6 +45,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --config-dir DIR       Config directory (default: config/)" >&2
             echo "  --site-env FILE        Path to site.env (default: config-dir/site.env)" >&2
             echo "  --site-id ID           Site ID (overrides albums.yaml)" >&2
+            echo "  --aws-profile NAME     AWS profile to use for aws commands (S3 sync, CloudFront)" >&2
             echo "  --no-photogen          Skip photogen step" >&2
             echo "  --no-build             Skip build step" >&2
             echo "  --no-pre-deploy-tests  Skip pre-deploy server and Playwright tests" >&2
@@ -120,6 +124,12 @@ else
     # never a bare or empty string that could default to the remote home directory.
     [[ "$RSYNC_DEST" == */ ]] || RSYNC_DEST="${RSYNC_DEST}/"
 fi
+
+# Build the aws command. When --aws-profile is given, --profile is inserted before the
+# subcommand so it applies to every aws invocation (S3 sync, CloudFront). Useful when AWS
+# credentials live in a named profile rather than environment variables.
+AWS=(aws)
+[ -n "$AWS_PROFILE_ARG" ] && AWS=(aws --profile "$AWS_PROFILE_ARG")
 
 ###
 ### Begin deploy actions here
@@ -232,7 +242,7 @@ _post_deploy() {
     elif [ -z "$CLOUDFRONT_ID" ]; then
         echo "Skipping CloudFront invalidation (CLOUDFRONT_ID not set in $SITE_ENV)"
     else
-        aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_ID" --paths "/*" \
+        "${AWS[@]}" cloudfront create-invalidation --distribution-id "$CLOUDFRONT_ID" --paths "/*" \
             --query 'Invalidation.Id' --output text
     fi
 
@@ -278,7 +288,7 @@ elif [ "$S3_MODE" = true ]; then
     # Pass 1: sync web build, protecting albums/ image/JSON data (managed by Pass 2 below).
     # --exclude "albums/*" prevents uploading or deleting album images/JSON from S3.
     # --include "albums/*.html" re-includes pre-rendered SvelteKit album pages (last rule wins).
-    aws s3 sync "$REPO_ROOT/build/$SITE_ID/" "s3://$S3_BUCKET/" \
+    "${AWS[@]}" s3 sync "$REPO_ROOT/build/$SITE_ID/" "s3://$S3_BUCKET/" \
         "${S3_SYNC_OPTS[@]}" --exclude "albums/*" --include "albums/*.html"
 
     # Deploy album data — two passes to set different Cache-Control headers.
@@ -289,7 +299,7 @@ elif [ "$S3_MODE" = true ]; then
     #   default size+timestamp comparison reliably detects changes. --size-only would
     #   silently skip re-encrypted JSON files since AES-GCM output size is key-independent.
     # --exclude=*.html: don't delete pre-rendered .html pages synced above.
-    aws s3 sync "$DDPHOTOS_ALBUMS_DIR/$SITE_ID/" "s3://$S3_BUCKET/albums/" \
+    "${AWS[@]}" s3 sync "$DDPHOTOS_ALBUMS_DIR/$SITE_ID/" "s3://$S3_BUCKET/albums/" \
         "${S3_SYNC_OPTS[@]}" --exclude "*.html" --exclude "*.webp" \
         --cache-control "no-cache"
 
@@ -297,7 +307,7 @@ elif [ "$S3_MODE" = true ]; then
     #   derived from HMAC(key, filename), so key rotation renames all files.
     #   photogen skips existing WebP files (preserving timestamp), so unchanged files are
     #   never re-uploaded. Regenerated files (after manual delete) get a new timestamp.
-    aws s3 sync "$DDPHOTOS_ALBUMS_DIR/$SITE_ID/" "s3://$S3_BUCKET/albums/" \
+    "${AWS[@]}" s3 sync "$DDPHOTOS_ALBUMS_DIR/$SITE_ID/" "s3://$S3_BUCKET/albums/" \
         "${S3_SYNC_OPTS[@]}" \
         --exclude "*" --include "*.webp" \
         --cache-control "max-age=31536000,immutable"

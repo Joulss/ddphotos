@@ -209,6 +209,10 @@ In Docker mode, `~/.ssh` is mounted into the container automatically if the dire
 In Docker mode, `~/.aws` is mounted and any of those environment variables that are set
 are forwarded into the container automatically.
 
+To select a named profile from `~/.aws` without setting environment variables, pass
+`--aws-profile NAME` (developer mode) or `ddphotos deploy --aws-profile NAME` (Docker mode).
+The flag inserts `--profile NAME` before the subcommand on every `aws` call.
+
 ## Deploying — Docker Mode
 
 ```bash
@@ -257,15 +261,17 @@ The script uses `set -eo pipefail` — any failure aborts before deployment.
 | `--no-pre-deploy-tests` | Skip pre-deploy Docker/Apache test and Playwright (rsync mode only); post-deploy tests still run                        |
 | `--no-server-test`      | Skip both the local and post-deploy server routing tests                                                                |
 | `--no-playwright`       | Skip Playwright tests (both local and production)                                                                       |
-| `--config-dir`          | Directory containing `albums.yaml` and (by default) `site.env`                                                          |
-| `--site-id`             | Site ID (overrides albums.yaml)                                                                                         |
-| `--site-env`            | Path to `site.env` — overrides `--config-dir/site.env` when the two live in different locations                         |
+| `--config-dir DIR`      | Directory containing `albums.yaml` and (by default) `site.env`                                                          |
+| `--site-id ID`          | Site ID (overrides albums.yaml)                                                                                         |
+| `--aws-profile NAME`    | AWS profile name; inserts `--profile NAME` before the subcommand on every `aws` call (S3 sync, CloudFront)              |
+| `--site-env FILE`       | Path to `site.env` — overrides `--config-dir/site.env` when the two live in different locations                         |
 
 ```bash
 # S3 mode
 bin/deploy-photos.sh --s3                          # full S3 deploy
 bin/deploy-photos.sh --s3 --dry-run                # preview what s3 sync would transfer, no changes made
 bin/deploy-photos.sh --s3 --no-photogen            # skip photo generation
+bin/deploy-photos.sh --s3 --aws-profile my-profile # use a named AWS profile for aws commands
 
 # rsync mode
 bin/deploy-photos.sh                               # full deploy
