@@ -93,7 +93,7 @@ add_mount() {
 # Print all registered mounts (no-op unless --show-mounts was passed).
 print_mounts() {
     $SHOW_MOUNTS || return 0
-    echo "Mounting:"
+    echo "DD Photos (using $DOCKER) is mounting:"
     local i=0
     while [ $i -lt ${#MOUNT_FROM[@]} ]; do
         local suffix=""
@@ -238,9 +238,54 @@ host_to_container() {
     fi
 }
 
+# Resolve the docker binary, setting DOCKER. Prefer one on the PATH; otherwise search
+# well-known install locations so novice users whose PATH lacks docker still work.
+# Exits with an error if no docker binary can be found. Mirrors the wizard's DockerStatus.java.
+DOCKER="docker"
+resolve_docker() {
+    if command -v docker >/dev/null 2>&1; then
+        DOCKER="$(command -v docker)"
+        return 0
+    fi
+
+    local candidates=()
+    case "$OSTYPE" in
+        darwin*)
+            candidates=(
+                /usr/local/bin/docker
+                /usr/bin/docker
+                "$HOME/.docker/bin/docker"
+                /Applications/Docker.app/Contents/Resources/bin/docker
+            ) ;;
+        linux*)
+            candidates=(
+                /usr/bin/docker
+                /usr/local/bin/docker
+                /snap/bin/docker
+            ) ;;
+        msys|cygwin)
+            candidates=(
+                "/c/Program Files/Docker/Docker/resources/bin/docker.exe"
+            ) ;;
+    esac
+
+    local path
+    for path in "${candidates[@]}"; do
+        if [ -x "$path" ]; then
+            DOCKER="$path"
+            return 0
+        fi
+    done
+
+    echo "Error: 'docker' was not found on your PATH or in any standard install location." >&2
+    echo "       Install Docker Desktop (https://www.docker.com/get-started/)" >&2
+    echo "       or make sure the 'docker' command is on your PATH." >&2
+    exit 1
+}
+
 # Ensure Docker daemon is running, or print a platform-appropriate hint and exit.
 ensure_docker_running() {
-    docker info >/dev/null 2>&1 && return 0
+    "$DOCKER" info >/dev/null 2>&1 && return 0
 
     if [[ "$OSTYPE" == "darwin"* || "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
         echo "Error: Docker is not running. Make sure Docker Desktop is open." >&2
@@ -292,12 +337,13 @@ fi
 
 # Require Docker for all commands except: help, and version without --image.
 if [[ "$cmd" != "help" ]] && [[ "$cmd" != "version" || "${1:-}" == "--image" ]]; then
+    resolve_docker
     ensure_docker_running
 fi
 
 case "$cmd" in
     init)
-        docker run --rm "${MOUNT_FLAGS[@]}" "$IMAGE" init "$@"
+        "$DOCKER" run --rm "${MOUNT_FLAGS[@]}" "$IMAGE" init "$@"
         ;;
 
     decode)
@@ -342,7 +388,7 @@ case "$cmd" in
         fi
 
         print_mounts
-        docker run --rm "${MOUNT_FLAGS[@]}" "$IMAGE" decode "${PW_ARGS[@]}" "$ENC_CONTAINER"
+        "$DOCKER" run --rm "${MOUNT_FLAGS[@]}" "$IMAGE" decode "${PW_ARGS[@]}" "$ENC_CONTAINER"
         ;;
 
     search-cover)
@@ -351,7 +397,7 @@ case "$cmd" in
             exit 1
         fi
         print_mounts
-        docker run --rm \
+        "$DOCKER" run --rm \
             -e DDPHOTOS_SITE_ID="$DDPHOTOS_SITE_ID" \
             "${MOUNT_FLAGS[@]}" \
             "$IMAGE" search-cover "$@"
@@ -362,7 +408,7 @@ case "$cmd" in
         print_mounts
         PHOTOGEN_ENV=(-e DDPHOTOS_SITE_ID="$DDPHOTOS_SITE_ID")
         [ -n "$DDPHOTOS_CONFIG_DIR" ] && PHOTOGEN_ENV+=(-e "DDPHOTOS_CONFIG_DIR=$DDPHOTOS_CONFIG_DIR")
-        docker run --rm \
+        "$DOCKER" run --rm \
             "${MOUNT_FLAGS[@]}" \
             "${PHOTOGEN_ENV[@]}" \
             "$IMAGE" photogen "$@"
@@ -370,7 +416,7 @@ case "$cmd" in
 
     build)
         print_mounts
-        docker run --rm \
+        "$DOCKER" run --rm \
             -e DDPHOTOS_SITE_ID="$DDPHOTOS_SITE_ID" \
             "${MOUNT_FLAGS[@]}" \
             "$IMAGE" build "$@"
@@ -378,7 +424,7 @@ case "$cmd" in
 
     serve)
         print_mounts
-        docker run --rm "${IT_FLAGS[@]}" \
+        "$DOCKER" run --rm "${IT_FLAGS[@]}" \
             -e DDPHOTOS_SITE_ID="$DDPHOTOS_SITE_ID" \
             -e SERVE_PORT="$SERVE_PORT" \
             "${MOUNT_FLAGS[@]}" \
@@ -388,7 +434,7 @@ case "$cmd" in
 
     run)
         print_mounts
-        docker run --rm "${IT_FLAGS[@]}" \
+        "$DOCKER" run --rm "${IT_FLAGS[@]}" \
             -e DDPHOTOS_SITE_ID="$DDPHOTOS_SITE_ID" \
             -e RUN_PORT="$RUN_PORT" \
             "${MOUNT_FLAGS[@]}" \
@@ -398,7 +444,7 @@ case "$cmd" in
 
     export)
         print_mounts
-        docker run --rm \
+        "$DOCKER" run --rm \
             -e DDPHOTOS_SITE_ID="$DDPHOTOS_SITE_ID" \
             "${MOUNT_FLAGS[@]}" \
             "$IMAGE" export "$@"
@@ -415,7 +461,7 @@ case "$cmd" in
         [ -n "$DDPHOTOS_CONFIG_DIR" ] && DEPLOY_ENV+=(-e "DDPHOTOS_CONFIG_DIR=$DDPHOTOS_CONFIG_DIR")
         [ -n "$DDPHOTOS_SITE_ENV" ]   && DEPLOY_ENV+=(-e "DDPHOTOS_SITE_ENV=$DDPHOTOS_SITE_ENV")
         print_mounts
-        docker run --rm \
+        "$DOCKER" run --rm \
             -e SITE_ID="$DDPHOTOS_SITE_ID" \
             "${MOUNT_FLAGS[@]}" \
             "${DEPLOY_ENV[@]}" \
@@ -448,7 +494,7 @@ case "$cmd" in
             print_mounts
             # No -it: wrangler login needs no terminal input; piping requires it off.
             # Merge stderr into stdout (2>&1) so the URL line is visible to the while loop.
-            docker run --rm \
+            "$DOCKER" run --rm \
                 -w /ddphotos \
                 -v ddphotos-npm-cache:/root/.npm \
                 -v ddphotos-wrangler-config:/root/.config/.wrangler \
@@ -472,7 +518,7 @@ case "$cmd" in
             # Working dir is /ddphotos so relative paths like export/<site-id> resolve correctly.
             # Credentials are read from the ddphotos-wrangler-config volume (populated by login).
             print_mounts
-            docker run --rm "${IT_FLAGS[@]}" \
+            "$DOCKER" run --rm "${IT_FLAGS[@]}" \
                 -w /ddphotos \
                 -v ddphotos-npm-cache:/root/.npm \
                 -v ddphotos-wrangler-config:/root/.config/.wrangler \
@@ -494,7 +540,7 @@ case "$cmd" in
         add_mount "$HOME/.netrc" /root/.netrc
         print_mounts
         # Working dir is /ddphotos so relative paths like export/<site-id> resolve correctly.
-        docker run --rm "${IT_FLAGS[@]}" \
+        "$DOCKER" run --rm "${IT_FLAGS[@]}" \
             -w /ddphotos \
             -v ddphotos-npm-cache:/root/.npm \
             "${MOUNT_FLAGS[@]}" \
@@ -510,22 +556,23 @@ case "$cmd" in
             UPGRADE_IMAGE="${IMAGE%%:*}:$TARGET_VERSION"
             LATEST_IMAGE="${IMAGE%%:*}:latest"
             echo "Upgrading to $UPGRADE_IMAGE..."
-            docker pull "$UPGRADE_IMAGE"
+            "$DOCKER" pull "$UPGRADE_IMAGE"
             # update 'latest' tag to match
-            docker tag "$UPGRADE_IMAGE" "$LATEST_IMAGE"
+            "$DOCKER" tag "$UPGRADE_IMAGE" "$LATEST_IMAGE"
             # remove previous image
             echo "Removing old $IMAGE..."
-            docker image rm "$IMAGE"
+            "$DOCKER" image rm "$IMAGE"
         fi
         # update this script
-        docker run --rm "${MOUNT_FLAGS[@]}" "$UPGRADE_IMAGE" upgrade
+        "$DOCKER" run --rm "${MOUNT_FLAGS[@]}" "$UPGRADE_IMAGE" upgrade
         ;;
 
     version)
+        print_mounts
         echo "Script:         $SCRIPT_DIR/ddphotos"
         echo "Image:          $IMAGE"
         if [ "${1:-}" = "--image" ]; then
-            docker run --rm "$IMAGE" version | sed 's/^/                  /'
+            "$DOCKER" run --rm "$IMAGE" version | sed 's/^/                  /'
         fi
         echo "DD Photos dir:  $DDPHOTOS_DIR"
         echo "Config dir:     $CONFIG_HOST_DIR"
