@@ -52,7 +52,7 @@ type Photo struct {
 
 // String returns a human-readable representation of the photo for logging.
 func (p *Photo) String() string {
-	dateStr := "no date"
+	dateStr := "no EXIF date"
 	if !p.DateTaken.IsZero() {
 		dateStr = p.DateTaken.Format("2006-01-02 15:04")
 	}
