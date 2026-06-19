@@ -122,7 +122,8 @@ Website features:
 
 Backend features:
 
-- Two efficient WebP image sizes created: `grid` (600px) and `full` (1600px).
+- Two efficient WebP image sizes created: `grid` (600px) and `full` (1600px by default,
+  configurable up to original dimensions).
 - EXIF metadata extraction (dimensions, date) stored in JSON.
 - All image metadata stripped from WebP output (smaller files, no GPS leak).
 - Concurrent image resizing via goroutines (buffered channel, WaitGroup).

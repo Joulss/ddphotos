@@ -32,6 +32,9 @@ type Config struct {
 	Force bool
 	// Resize enables generating resized image variants (thumb, grid, full).
 	Resize bool
+	// FullMaxDimension caps the long edge for the full WebP variant.
+	// 0 means the default cap; PreserveOriginalFullMaxDimension preserves original dimensions.
+	FullMaxDimension int
 	// Index enables generating JSON index files (albums.json and per-album index.json).
 	Index bool
 	// SiteName is the site title displayed in the browser and OG tags.
@@ -113,6 +116,9 @@ func (c *Config) Validate() error {
 	}
 	if c.CopyrightYear == 0 {
 		return fmt.Errorf("settings.copyright_year is required")
+	}
+	if c.FullMaxDimension < PreserveOriginalFullMaxDimension {
+		return fmt.Errorf("settings.full_max_dimension must be 0 or greater")
 	}
 	if c.Encrypt != nil {
 		if err := c.Encrypt.Validate(); err != nil {
@@ -226,6 +232,7 @@ func (c *Config) Summary() string {
 	lines := []string{
 		fmt.Sprintf("  output:   %s", c.SiteOutputPath()),
 		fmt.Sprintf("  resize:   %s", on(c.Resize)),
+		fmt.Sprintf("  full:     %s", c.FullSizeDescription()),
 		fmt.Sprintf("  index:    %s", on(c.Index)),
 		fmt.Sprintf("  force:    %s", on(c.Force)),
 		fmt.Sprintf("  clean:    %s", on(c.Clean)),
@@ -236,6 +243,40 @@ func (c *Config) Summary() string {
 		fmt.Sprintf("  css:      %s", cssDesc),
 	}
 	return strings.Join(lines, "\n")
+}
+
+// EffectiveFullMaxDimension returns the configured long-edge cap for full images.
+// 0 means original dimensions are preserved.
+func (c *Config) EffectiveFullMaxDimension() int {
+	switch c.FullMaxDimension {
+	case PreserveOriginalFullMaxDimension:
+		return 0
+	case 0:
+		return DefaultFullMaxDimension
+	default:
+		return c.FullMaxDimension
+	}
+}
+
+// FullSizeDescription is used in CLI summaries.
+func (c *Config) FullSizeDescription() string {
+	maxDim := c.EffectiveFullMaxDimension()
+	if maxDim == 0 {
+		return "original"
+	}
+	return fmt.Sprintf("%dpx", maxDim)
+}
+
+// GetSizeConfig returns the effective resize settings for this build.
+func (c *Config) GetSizeConfig(size ImageSize) (ImageSizeConfig, bool) {
+	cfg, ok := GetSizeConfig(size)
+	if !ok {
+		return ImageSizeConfig{}, false
+	}
+	if size == SizeFull {
+		cfg.MaxDimension = c.EffectiveFullMaxDimension()
+	}
+	return cfg, true
 }
 
 // Workers returns the number of concurrent resize workers to use. If NumWorkers

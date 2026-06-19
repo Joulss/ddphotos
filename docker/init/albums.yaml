@@ -43,6 +43,7 @@ settings:
   copyright_owner: Your Name
   copyright_year: 2026
   allow_crawling: false
+  # full_max_dimension: 3200  # defaults to 1600; set 0 for original dimensions
   css: custom.css
   passwords: passwords.yaml
   site_title_html: >-

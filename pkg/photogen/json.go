@@ -53,10 +53,10 @@ type AlbumIndex struct {
 type PhotoIndex struct {
 	ID          string        `json:"id"`
 	FileName    string        `json:"fileName"`
-	SourcePath  string        `json:"sourcePath"` // relative path from album source base directory to the original source file
-	Width       int           `json:"width"`
-	Height      int           `json:"height"`
-	Orientation string        `json:"orientation"`
+	SourcePath  string        `json:"sourcePath"`            // relative path from album source base directory to the original source file
+	Width       int           `json:"width"`                 // full variant width, used by PhotoSwipe
+	Height      int           `json:"height"`                // full variant height, used by PhotoSwipe
+	Orientation string        `json:"orientation"`           // full variant orientation
 	DateTime    string        `json:"datetime"`              // ISO 8601 datetime (camera local time, normalized to UTC)
 	Description string        `json:"description,omitempty"` // from photogen.txt
 	Src         PhotoSrcIndex `json:"src"`
@@ -100,13 +100,18 @@ func (ap *AlbumProcessor) WriteAlbumIndex() error {
 		if !photo.DateTaken.IsZero() {
 			dateStr = photo.DateTaken.UTC().Format(time.RFC3339)
 		}
+		fullConfig, ok := ap.Config.GetSizeConfig(SizeFull)
+		if !ok {
+			return fmt.Errorf("unknown image size: %s", SizeFull)
+		}
+		fullWidth, fullHeight := ResizedDimensions(photo.Width, photo.Height, fullConfig.MaxDimension)
 		pi := PhotoIndex{
 			ID:          photo.ID,
 			FileName:    photo.FileName,
 			SourcePath:  photo.SourcePath,
-			Width:       photo.Width,
-			Height:      photo.Height,
-			Orientation: photo.Orientation,
+			Width:       fullWidth,
+			Height:      fullHeight,
+			Orientation: deriveOrientation(fullWidth, fullHeight),
 			DateTime:    dateStr,
 			Description: photo.Description,
 			Src: PhotoSrcIndex{

@@ -7,7 +7,7 @@
 	import { browser } from '$app/environment';
 	import { goto, replaceState, pushState } from '$app/navigation';
 	import justifiedLayout from 'justified-layout';
-	import PhotoSwipe from 'photoswipe';
+	import PhotoSwipe, { type Padding, type Point, type PreparedPhotoSwipeOptions, type SlideData } from 'photoswipe';
 	import 'photoswipe/style.css';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import BackToTop from '$lib/components/BackToTop.svelte';
@@ -129,6 +129,27 @@
 		if (cover) storeAlbumCover(siteId, slug, `/albums/${slug}/${cover}`);
 	}
 
+	function hasDesktopPointer() {
+		return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+	}
+
+	const DESKTOP_LIGHTBOX_SIDE_PADDING = 24;
+	const NO_LIGHTBOX_PADDING: Padding = { top: 0, bottom: 0, left: 0, right: 0 };
+
+	function desktopLightboxPadding(viewportSize: Point, itemData: SlideData): Padding {
+		const width = itemData.width ?? itemData.w ?? 0;
+		const height = itemData.height ?? itemData.h ?? 0;
+		const needsPadding = width >= viewportSize.x || height >= viewportSize.y;
+		return needsPadding
+			? {
+					top: 0,
+					bottom: 0,
+					left: DESKTOP_LIGHTBOX_SIDE_PADDING,
+					right: DESKTOP_LIGHTBOX_SIDE_PADDING
+				}
+			: NO_LIGHTBOX_PADDING;
+	}
+
 	async function tryDecryptAlbum() {
 		if (!albumEncrypted) return;
 		unlocking = true;
@@ -171,13 +192,25 @@
 
 	function openLightbox(index: number, animate = true) {
 		pendingFocusIndex = index;
+		const desktopZoomOptions: Partial<PreparedPhotoSwipeOptions> = hasDesktopPointer()
+			? {
+					initialZoomLevel: 'fit',
+					secondaryZoomLevel: 1,
+					maxZoomLevel: 1,
+					imageClickAction: 'zoom',
+					clickToCloseNonZoomable: false,
+					mouseMovePan: true,
+					paddingFn: desktopLightboxPadding
+				}
+			: {};
 		const pswp = new PhotoSwipe({
 			dataSource: photoswipeItems,
 			index,
 			bgClickAction: 'close',
 			closeOnVerticalDrag: true,
 			padding: { top: 0, bottom: 0, left: 0, right: 0 },
-			showAnimationDuration: animate ? undefined : 0
+			showAnimationDuration: animate ? undefined : 0,
+			...desktopZoomOptions
 		});
 
 		// Whether back-button navigation triggered this close (set by handlePopstate).
@@ -345,8 +378,15 @@
 					}
 					el.textContent = item.caption;
 					el.style.display = '';
-					const scale = Math.min(window.innerWidth / item.w, window.innerHeight / item.h);
-					el.style.bottom = `${Math.floor((window.innerHeight - item.h * scale) / 2)}px`;
+					const slide = holder.slide;
+					if (!slide) return;
+					const displayedWidth = slide.width * slide.currZoomLevel;
+					const displayedHeight = slide.height * slide.currZoomLevel;
+					el.style.left = `${Math.round(slide.pan.x)}px`;
+					el.style.right = 'auto';
+					el.style.width = `${Math.round(displayedWidth)}px`;
+					el.style.maxWidth = `${Math.round(displayedWidth)}px`;
+					el.style.bottom = `${Math.round(window.innerHeight - (slide.pan.y + displayedHeight))}px`;
 				});
 			};
 
@@ -369,6 +409,7 @@
 			pswp.on('zoomPanUpdate', () => {
 				const slide = pswp.currSlide;
 				const isZoomed = slide !== undefined && slide.currZoomLevel > slide.zoomLevels.initial * 1.01;
+				updateAll();
 				if (isZoomed) {
 					// Covers pinch-to-zoom (beforeZoomTo doesn't fire for pinch)
 					if (captionFadeTimer) { clearTimeout(captionFadeTimer); captionFadeTimer = null; }
@@ -778,9 +819,10 @@
 		}
 	}
 
-	/* PhotoSwipe customizations for dark theme */
+	/* PhotoSwipe follows the app theme for its chrome and backdrop. */
 	:global(.pswp) {
-		--pswp-bg: #000;
+		--pswp-bg: var(--bg-color);
+		color: var(--text-color);
 	}
 
 	/* Fully opaque background - hide content underneath */
@@ -789,21 +831,34 @@
 	}
 
 	/* Make nav arrows less prominent and nudge inward */
+	:global(.pswp__button) {
+		color: var(--text-color) !important;
+	}
+
 	:global(.pswp__button--arrow) {
 		opacity: 0.3 !important;
 	}
 
 	:global(.pswp__button--arrow--prev) {
-		left: 7px !important;
+		left: 18px !important;
 	}
 
 	:global(.pswp__button--arrow--next) {
-		right: 7px !important;
+		right: 18px !important;
+	}
+
+	@media (hover: none) {
+		:global(.pswp__button--arrow--prev) {
+			left: 7px !important;
+		}
+
+		:global(.pswp__button--arrow--next) {
+			right: 7px !important;
+		}
 	}
 
 	/* Copy-link button in the PhotoSwipe top bar */
 	:global(.pswp__button--copy-link) {
-		color: white;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -822,8 +877,9 @@
 		top: 40px;
 		left: 50%;
 		transform: translateX(-50%);
-		background: rgba(0, 0, 0, 0.75);
-		color: white;
+		background: var(--bg-secondary);
+		color: var(--text-color);
+		border: 1px solid var(--border-color);
 		font-size: 12px;
 		font-style: italic;
 		white-space: nowrap;

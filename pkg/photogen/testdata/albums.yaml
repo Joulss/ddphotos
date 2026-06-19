@@ -6,6 +6,7 @@
 settings:
   site_url: https://photos.example.com
   descriptions: descriptions.txt
+  full_max_dimension: 3200
 
 bases:
   t7: /Volumes/T7/Photos

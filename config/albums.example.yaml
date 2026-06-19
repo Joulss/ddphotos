@@ -33,6 +33,12 @@ settings:
   # When true, robots.txt allows all bots and includes the sitemap URL.
   # allow_crawling: false
 
+  # Maximum long edge for "full" WebP images used in the lightbox.
+  # Defaults to 1600. Set to a larger value for deeper desktop zoom, or 0 to
+  # preserve original dimensions while still converting to WebP and stripping metadata.
+  # Larger values increase disk usage, build time, and bandwidth.
+  # full_max_dimension: 3200
+
   # Optional HTML for the site title displayed on the home page.
   # Falls back to site_name when omitted. Useful for adding links or emphasis.
   # Use YAML block scalar (>-) for multi-word values with special characters.

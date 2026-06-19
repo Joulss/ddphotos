@@ -62,10 +62,18 @@ func (ap *AlbumProcessor) ResizePhotos() error {
 				if exit.ExitRequested() {
 					return
 				}
-				result, err := ResizeImage(
+				sizeConfig, ok := ap.Config.GetSizeConfig(item.size)
+				if !ok {
+					errOnce.Do(func() {
+						firstErr = fmt.Errorf("unknown image size: %s", item.size)
+					})
+					return
+				}
+				result, err := ResizeImageWithConfig(
 					item.photo.AbsolutePath,
 					item.outputPath,
 					item.size,
+					sizeConfig,
 					ap.Config.Force,
 					ap.Config.DryRun,
 				)

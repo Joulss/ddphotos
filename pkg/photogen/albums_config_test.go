@@ -19,6 +19,8 @@ func TestLoadAlbumsFile(t *testing.T) {
 
 		assert.Equal(t, "https://photos.example.com", af.Settings.SiteURL)
 		assert.Equal(t, "descriptions.txt", af.Settings.Descriptions)
+		require.NotNil(t, af.Settings.FullMaxDimension)
+		assert.Equal(t, 3200, *af.Settings.FullMaxDimension)
 
 		assert.Equal(t, "/Volumes/T7/Photos", af.Bases["t7"])
 		assert.Equal(t, "/Users/example/Dropbox/Photos", af.Bases["dropbox"])
@@ -92,6 +94,14 @@ func TestLoadAlbumsFile(t *testing.T) {
     base: nonexistent`)
 		_, err := LoadAlbumsFile(af)
 		require.ErrorContains(t, err, `base "nonexistent" not defined`)
+	})
+
+	t.Run("negative full max dimension", func(t *testing.T) {
+		af := writeYAML(t, `settings:
+  full_max_dimension: -1
+albums: []`)
+		_, err := LoadAlbumsFile(af)
+		require.ErrorContains(t, err, "full_max_dimension")
 	})
 }
 

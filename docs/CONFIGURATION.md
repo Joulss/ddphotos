@@ -43,24 +43,26 @@ settings:
   copyright_owner: "Your Name"           # required
   copyright_year: 2020                   # required
   allow_crawling: false                  # set true to allow search engine indexing
+  full_max_dimension: 3200               # optional; 0 preserves original dimensions
   site_title_html: "<b>My Photos</b>"    # optional HTML for home page title
   site_subtitle_html: "Since 2010"       # optional HTML below the title
   site_overview_html: "Welcome!"         # optional HTML above album cards
 ```
 
-| Setting              | Required | Description                                                                                                  |
-|----------------------|----------|--------------------------------------------------------------------------------------------------------------|
-| `id`                 | yes      | Names the output directory; must be lowercase letters, digits, and hyphens                                   |
-| `site_name`          | yes      | Site title shown in the browser tab and OG tags                                                              |
-| `site_url`           | yes      | Canonical base URL (e.g. `https://photos.example.com`); used in sitemap and OG tags                          |
-| `site_description`   | yes      | Meta description and OG description for the home page                                                        |
-| `copyright_owner`    | yes      | Name shown in the footer copyright line                                                                      |
-| `copyright_year`     | yes      | Start year shown in the footer copyright line                                                                |
-| `descriptions`       | no       | Path to a [descriptions file](#album-descriptions), relative to the config dir; see that section for details |
-| `allow_crawling`     | no       | Set to `true` to allow search engine crawling; adds `Sitemap:` to `robots.txt` (default: `false`)            |
-| `site_title_html`    | no       | HTML for the site title on the home page; falls back to `site_name` when omitted                             |
-| `site_subtitle_html` | no       | HTML rendered below the site title in a smaller font                                                         |
-| `site_overview_html` | no       | HTML rendered above the album cards (slightly larger than album descriptions)                                |
+| Setting              | Required | Description                                                                                       |
+|----------------------|----------|---------------------------------------------------------------------------------------------------|
+| `id`                 | yes      | Names the output directory; must be lowercase letters, digits, and hyphens                        |
+| `site_name`          | yes      | Site title shown in the browser tab and OG tags                                                   |
+| `site_url`           | yes      | Canonical base URL (e.g. `https://photos.example.com`); used in sitemap and OG tags               |
+| `site_description`   | yes      | Meta description and OG description for the home page                                             |
+| `copyright_owner`    | yes      | Name shown in the footer copyright line                                                           |
+| `copyright_year`     | yes      | Start year shown in the footer copyright line                                                     |
+| `descriptions`       | no       | Path to a [descriptions file](#descriptionstext), relative to the config dir; see that section for details |
+| `allow_crawling`     | no       | Set to `true` to allow search engine crawling; adds `Sitemap:` to `robots.txt` (default: `false`)          |
+| `full_max_dimension` | no       | Long-edge cap for lightbox `full` WebP images; defaults to `1600`; set `0` to preserve original dimensions |
+| `site_title_html`    | no       | HTML for the site title on the home page; falls back to `site_name` when omitted                  |
+| `site_subtitle_html` | no       | HTML rendered below the site title in a smaller font                                              |
+| `site_overview_html` | no       | HTML rendered above the album cards (slightly larger than album descriptions)                     |
 
 ### Source Bases
 
@@ -111,6 +113,21 @@ where to find the hero and CSS, and what hints to show before a password is ente
 The three `*_html` fields are the only settings that are encrypted when a site password
 is set, since they may contain private links or contact details. All other settings
 travel via `config.json` which is always plaintext.
+
+### Full-Size Images
+
+Album photos are generated in two WebP variants: `grid` for album thumbnails and `full`
+for the PhotoSwipe lightbox. `grid` is fixed at 600px on the long edge. `full` defaults
+to 1600px, but can be increased for better desktop zoom:
+
+```yaml
+settings:
+  full_max_dimension: 3200
+```
+
+Set `full_max_dimension: 0` to preserve the original pixel dimensions while still
+converting to WebP and stripping metadata. This gives the deepest zoom, but increases
+build time, disk usage, and bandwidth.
 
 ### Hero Image
 

@@ -32,6 +32,7 @@ bin/photogen -resize -index -clean -doit  # developer mode
 | `-config-dir` | `config`      | Directory containing `albums.yaml` and optional supporting files                                                                     |
 | `-doit`       | `false`       | Write files; without this, runs in dry-run mode                                                                                      |
 | `-resize`     | `false`       | Generate resized WebP image variants                                                                                                 |
+| `-full-max-dimension N` | *(from YAML/default)* | Max long edge for `full` images; defaults to `settings.full_max_dimension` or `1600`; `0` preserves original dimensions |
 | `-index`      | `false`       | Generate JSON index files and sitemap.xml                                                                                            |
 | `-out`        | *(from env)*  | Albums directory override (overrides `DDPHOTOS_ALBUMS_DIR`)                                                                          |
 | `-limit N`    | `0` (all)     | Limit photos per album (useful during development)                                                                                   |

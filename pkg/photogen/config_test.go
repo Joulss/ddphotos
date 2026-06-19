@@ -30,6 +30,35 @@ func TestConfigWorkers(t *testing.T) {
 	})
 }
 
+func TestConfigFullMaxDimension(t *testing.T) {
+	t.Parallel()
+
+	t.Run("zero internal value falls back to default", func(t *testing.T) {
+		cfg := Config{FullMaxDimension: 0}
+		assert.Equal(t, DefaultFullMaxDimension, cfg.EffectiveFullMaxDimension())
+		assert.Equal(t, "1600px", cfg.FullSizeDescription())
+	})
+
+	t.Run("preserve original sentinel means original", func(t *testing.T) {
+		cfg := Config{FullMaxDimension: PreserveOriginalFullMaxDimension}
+		assert.Equal(t, 0, cfg.EffectiveFullMaxDimension())
+		assert.Equal(t, "original", cfg.FullSizeDescription())
+	})
+
+	t.Run("positive value is used for full size only", func(t *testing.T) {
+		cfg := Config{FullMaxDimension: 3200}
+
+		grid, ok := cfg.GetSizeConfig(SizeGrid)
+		assert.True(t, ok)
+		assert.Equal(t, 600, grid.MaxDimension)
+
+		full, ok := cfg.GetSizeConfig(SizeFull)
+		assert.True(t, ok)
+		assert.Equal(t, 3200, full.MaxDimension)
+		assert.Equal(t, 90, full.Quality)
+	})
+}
+
 func TestConfigValidate(t *testing.T) {
 	t.Parallel()
 
@@ -81,6 +110,15 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name:   "valid config",
 			config: Config{OutputRoot: "/tmp/out", SiteID: "my-site", SiteName: "My Site", SiteDescription: "Desc", CopyrightOwner: "Me", CopyrightYear: 2020},
+		},
+		{
+			name:   "valid config preserving original full images",
+			config: Config{OutputRoot: "/tmp/out", SiteID: "my-site", SiteName: "My Site", SiteDescription: "Desc", CopyrightOwner: "Me", CopyrightYear: 2020, FullMaxDimension: PreserveOriginalFullMaxDimension},
+		},
+		{
+			name:    "invalid full max dimension",
+			config:  Config{OutputRoot: "/tmp/out", SiteID: "my-site", SiteName: "My Site", SiteDescription: "Desc", CopyrightOwner: "Me", CopyrightYear: 2020, FullMaxDimension: -2},
+			wantErr: "settings.full_max_dimension",
 		},
 		{
 			name:   "valid config single char id",

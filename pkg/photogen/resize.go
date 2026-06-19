@@ -16,15 +16,30 @@ const (
 	SizeFull ImageSize = "full" // Large full view
 )
 
+const DefaultFullMaxDimension = 1600
+const PreserveOriginalFullMaxDimension = -1
+
 // ImageSizeConfig holds dimension constraints for each size.
 type ImageSizeConfig struct {
 	MaxDimension int // Maximum width or height (maintains aspect ratio)
 	Quality      int // WebP quality (1-100)
 }
 
+// ResizedDimensions returns the dimensions after applying a long-edge cap.
+// maxDim 0 preserves the original dimensions.
+func ResizedDimensions(width, height, maxDim int) (int, int) {
+	if maxDim <= 0 || (width <= maxDim && height <= maxDim) {
+		return width, height
+	}
+	if width > height {
+		return maxDim, int(float64(height)*float64(maxDim)/float64(width) + 0.5)
+	}
+	return int(float64(width)*float64(maxDim)/float64(height) + 0.5), maxDim
+}
+
 var sizeConfigs = map[ImageSize]ImageSizeConfig{
 	SizeGrid: {MaxDimension: 600, Quality: 85},
-	SizeFull: {MaxDimension: 1600, Quality: 90},
+	SizeFull: {MaxDimension: DefaultFullMaxDimension, Quality: 90},
 }
 
 // ResizeResult contains information about a resize operation.
@@ -75,19 +90,21 @@ func prepareImage(inputPath, outputPath string, maxDim int, dryRunLabel string, 
 		return nil, result, err
 	}
 
-	var scale float64
-	if img.Width() > img.Height() {
-		scale = float64(maxDim) / float64(img.Width())
-	} else {
-		scale = float64(maxDim) / float64(img.Height())
-	}
-	if scale >= 1.0 {
-		scale = 1.0
-	}
-	if scale < 1.0 {
-		if err := img.Resize(scale, vips.KernelLanczos3); err != nil {
-			img.Close()
-			return nil, nil, fmt.Errorf("resize: %w", err)
+	if maxDim > 0 {
+		var scale float64
+		if img.Width() > img.Height() {
+			scale = float64(maxDim) / float64(img.Width())
+		} else {
+			scale = float64(maxDim) / float64(img.Height())
+		}
+		if scale >= 1.0 {
+			scale = 1.0
+		}
+		if scale < 1.0 {
+			if err := img.Resize(scale, vips.KernelLanczos3); err != nil {
+				img.Close()
+				return nil, nil, fmt.Errorf("resize: %w", err)
+			}
 		}
 	}
 
@@ -107,7 +124,13 @@ func ResizeImage(inputPath, outputPath string, size ImageSize, force, dryRun boo
 	if !ok {
 		return nil, fmt.Errorf("unknown image size: %s", size)
 	}
+	return ResizeImageWithConfig(inputPath, outputPath, size, config, force, dryRun)
+}
 
+// ResizeImageWithConfig resizes an image using an explicit size configuration.
+// A MaxDimension of 0 preserves original dimensions while still converting to WebP
+// and stripping metadata.
+func ResizeImageWithConfig(inputPath, outputPath string, size ImageSize, config ImageSizeConfig, force, dryRun bool) (*ResizeResult, error) {
 	img, result, err := prepareImage(inputPath, outputPath, config.MaxDimension, string(size), force, dryRun)
 	if err != nil {
 		return nil, err

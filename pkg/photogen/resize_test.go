@@ -84,6 +84,84 @@ func TestResizeImage_Portrait(t *testing.T) {
 	t.Logf("portrait thumb: %dx%d", meta.Width, meta.Height)
 }
 
+func TestResizeImageWithConfig_ZeroMaxDimensionPreservesOriginalSize(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputPath := createTestImage(t, tmpDir, "original.jpg", 900, 700)
+	outputPath := filepath.Join(tmpDir, "original.webp")
+
+	result, err := ResizeImageWithConfig(
+		inputPath,
+		outputPath,
+		SizeFull,
+		ImageSizeConfig{MaxDimension: 0, Quality: 90},
+		false,
+		false,
+	)
+	require.NoError(t, err)
+	assert.True(t, result.Written)
+
+	meta, err := ReadPhotoMetadata(outputPath)
+	require.NoError(t, err)
+	assert.Equal(t, 900, meta.Width)
+	assert.Equal(t, 700, meta.Height)
+}
+
+func TestResizedDimensions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		width        int
+		height       int
+		maxDimension int
+		wantWidth    int
+		wantHeight   int
+	}{
+		{
+			name:         "preserves original when max is zero",
+			width:        5028,
+			height:       3317,
+			maxDimension: 0,
+			wantWidth:    5028,
+			wantHeight:   3317,
+		},
+		{
+			name:         "preserves smaller landscape",
+			width:        1200,
+			height:       800,
+			maxDimension: 1600,
+			wantWidth:    1200,
+			wantHeight:   800,
+		},
+		{
+			name:         "scales landscape",
+			width:        5028,
+			height:       3317,
+			maxDimension: 1600,
+			wantWidth:    1600,
+			wantHeight:   1056,
+		},
+		{
+			name:         "scales portrait",
+			width:        4284,
+			height:       5712,
+			maxDimension: 3200,
+			wantWidth:    2400,
+			wantHeight:   3200,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			gotWidth, gotHeight := ResizedDimensions(tc.width, tc.height, tc.maxDimension)
+			assert.Equal(t, tc.wantWidth, gotWidth)
+			assert.Equal(t, tc.wantHeight, gotHeight)
+		})
+	}
+}
+
 func TestResizeImage_SkipExisting(t *testing.T) {
 	inputPath := filepath.Join("testdata", "landscape-1.jpg")
 	tmpDir := t.TempDir()

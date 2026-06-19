@@ -20,6 +20,7 @@ settings:
     image: theway/2024-The-Way-13.jpg
     base: sample
     crop: center
+  full_max_dimension: 0
 
 bases:
   sample: sample/source

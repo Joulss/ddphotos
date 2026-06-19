@@ -155,6 +155,22 @@ func TestWriteAlbumIndex(t *testing.T) {
 		require.Len(t, idx.Photos, 1)
 	})
 
+	t.Run("photo dimensions match full variant cap", func(t *testing.T) {
+		t.Parallel()
+		dir := t.TempDir()
+		ap := makeAP(dir, nil)
+		ap.Config.FullMaxDimension = 50
+		require.NoError(t, ap.WriteAlbumIndex())
+
+		outPath := filepath.Join(dir, "testsite", "myalbum", "index.json")
+		idx, err := LoadAlbumIndex(outPath)
+		require.NoError(t, err)
+		require.Len(t, idx.Photos, 1)
+		assert.Equal(t, 25, idx.Photos[0].Width)
+		assert.Equal(t, 50, idx.Photos[0].Height)
+		assert.Equal(t, "portrait", idx.Photos[0].Orientation)
+	})
+
 	t.Run("encrypted writes index.enc.json with unreadable content", func(t *testing.T) {
 		t.Parallel()
 		dir := t.TempDir()

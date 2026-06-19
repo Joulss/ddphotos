@@ -59,6 +59,7 @@ var (
 	limit      = flag.Int("limit", 0, "limit number of photos per album (0 = no limit)")
 	force      = flag.Bool("force", false, "regenerate output files even if they already exist")
 	resize     = flag.Bool("resize", false, "generate resized image variants (grid, full)")
+	fullMaxDim = flag.Int("full-max-dimension", -1, "max long edge for full images in pixels; 0 preserves original dimensions (overrides settings.full_max_dimension)")
 	index      = flag.Bool("index", false, "generate JSON index files (albums.json and per-album index.json)")
 	siteURL    = flag.String("site-url", "", "base URL for sitemap generation (overrides YAML site_url)")
 	numWorkers = flag.Int("workers", 0, "number of concurrent resize workers (0 = auto: NumCPU/2, min 2)")
@@ -74,6 +75,9 @@ func main() {
 	flag.Parse()
 	exit.HandleSignal()
 	loadDefaultsEnv()
+	if *fullMaxDim < -1 {
+		exit.Fatal("Error: -full-max-dimension must be 0 or greater", nil)
+	}
 
 	albums, settings, err := photogen.LoadAlbumConfigs(*configDir, "albums.yaml")
 	if err != nil {
@@ -88,6 +92,21 @@ func main() {
 	resolvedSiteURL := settings.SiteURL
 	if *siteURL != "" {
 		resolvedSiteURL = *siteURL
+	}
+	resolvedFullMaxDimension := photogen.DefaultFullMaxDimension
+	if settings.FullMaxDimension != nil {
+		if *settings.FullMaxDimension == 0 {
+			resolvedFullMaxDimension = photogen.PreserveOriginalFullMaxDimension
+		} else {
+			resolvedFullMaxDimension = *settings.FullMaxDimension
+		}
+	}
+	if *fullMaxDim >= 0 {
+		if *fullMaxDim == 0 {
+			resolvedFullMaxDimension = photogen.PreserveOriginalFullMaxDimension
+		} else {
+			resolvedFullMaxDimension = *fullMaxDim
+		}
 	}
 
 	// Albums directory: -out flag > DDPHOTOS_ALBUMS_DIR env var > defaults.env (loaded above)
@@ -116,6 +135,7 @@ func main() {
 		Limit:            *limit,
 		Force:            *force,
 		Resize:           *resize,
+		FullMaxDimension: resolvedFullMaxDimension,
 		Index:            *index,
 		SiteName:         settings.SiteName,
 		SiteURL:          resolvedSiteURL,

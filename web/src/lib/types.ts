@@ -10,9 +10,9 @@ export interface Photo {
 	id: string;
 	fileName: string;
 	sourcePath: string; // relative path from album source base directory to the original source file
-	width: number;
-	height: number;
-	orientation: string;
+	width: number; // full variant width, used by PhotoSwipe
+	height: number; // full variant height, used by PhotoSwipe
+	orientation: string; // full variant orientation
 	datetime: string; // ISO 8601 datetime (camera local time, normalized to UTC); empty string if no EXIF date
 	description?: string;
 	src: PhotoSrc;

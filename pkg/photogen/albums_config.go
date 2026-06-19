@@ -25,6 +25,7 @@ type AlbumsSettings struct {
 	CopyrightOwner   string     `yaml:"copyright_owner"`    // name shown in footer copyright
 	CopyrightYear    int        `yaml:"copyright_year"`     // start year shown in footer copyright
 	AllowCrawling    bool       `yaml:"allow_crawling"`     // controls robots.txt (default: false)
+	FullMaxDimension *int       `yaml:"full_max_dimension"` // long-edge cap for full WebP images; 0 preserves original dimensions
 	Descriptions     string     `yaml:"descriptions"`       // filename relative to config dir
 	Passwords        string     `yaml:"passwords"`          // filename relative to config dir; enables encryption
 	CustomCSS        string     `yaml:"css"`                // filename relative to config dir; copied to output
@@ -95,6 +96,9 @@ func (af *AlbumsFile) validate() error {
 	}
 	if t := af.Settings.DefaultTheme; t != "" && t != "light" && t != "dark" {
 		return fmt.Errorf("settings: default_theme must be \"light\" or \"dark\", got %q", t)
+	}
+	if af.Settings.FullMaxDimension != nil && *af.Settings.FullMaxDimension < 0 {
+		return fmt.Errorf("settings: full_max_dimension must be 0 or greater")
 	}
 	if h := af.Settings.Hero; h != nil {
 		if h.Image == "" {
